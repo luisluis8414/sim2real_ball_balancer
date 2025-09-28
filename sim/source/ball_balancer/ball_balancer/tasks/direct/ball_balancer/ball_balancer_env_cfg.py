@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from isaaclab_assets.robots.cartpole import CARTPOLE_CFG
-
 from isaaclab.assets import ArticulationCfg
 from isaaclab.envs import DirectRLEnvCfg
 from isaaclab.scene import InteractiveSceneCfg
@@ -66,6 +64,7 @@ class BallBalancerEnvCfg(DirectRLEnvCfg):
                 shape=(12, IMAGE_WIDTH, IMAGE_HEIGHT),
                 dtype=np.float32,
             ),
+            # stabilzes training a lot and yields far better results. However the real robot only has a camera
             # "joints": spaces.Box(
             #     low=np.float32(-1.0), high=np.float32(1.0), shape=(3,), dtype=np.float32
             # ),
@@ -81,7 +80,7 @@ class BallBalancerEnvCfg(DirectRLEnvCfg):
     BALL_BALANCER_CFG = ArticulationCfg(
         prim_path="/World/envs/env_.*/ball_balancer",
         spawn=sim_utils.UsdFileCfg(
-            usd_path="C:/dev/ball_balancer/ball_balancer.usd",
+            usd_path="../assets/ball_balancer.usd",
             copy_from_source=False,
         ),
         actuators={

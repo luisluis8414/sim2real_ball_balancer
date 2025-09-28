@@ -21,45 +21,48 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 
 - Using a python interpreter that has Isaac Lab installed, install the library in editable mode using:
 
-    ```bash
-    # use 'PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-    python -m pip install -e source/ball_balancer
+  ```bash
+  # use 'PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+  python -m pip install -e source/ball_balancer
+
+  ```
 
 - Verify that the extension is correctly installed by:
 
-    - Listing the available tasks:
+  - Listing the available tasks:
 
-        Note: It the task name changes, it may be necessary to update the search pattern `"Template-"`
-        (in the `scripts/list_envs.py` file) so that it can be listed.
+    Note: It the task name changes, it may be necessary to update the search pattern `"Template-"`
+    (in the `scripts/list_envs.py` file) so that it can be listed.
 
-        ```bash
-        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-        python scripts/list_envs.py
-        ```
+    ```bash
+    # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+    python scripts/list_envs.py
+    ```
 
-    - Running a task:
+  - Running a task:
 
-        ```bash
-        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-        python scripts/<RL_LIBRARY>/train.py --task=<TASK_NAME>
-        ```
+    ```bash
+    # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+    python scripts/<RL_LIBRARY>/train.py --task=<TASK_NAME>
+    ```
 
-    - Running a task with dummy agents:
+  - Running a task with dummy agents:
 
-        These include dummy agents that output zero or random agents. They are useful to ensure that the environments are configured correctly.
+    These include dummy agents that output zero or random agents. They are useful to ensure that the environments are configured correctly.
 
-        - Zero-action agent
+    - Zero-action agent
 
-            ```bash
-            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-            python scripts/zero_agent.py --task=<TASK_NAME>
-            ```
-        - Random-action agent
+      ```bash
+      # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+      python scripts/zero_agent.py --task=<TASK_NAME>
+      ```
 
-            ```bash
-            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-            python scripts/random_agent.py --task=<TASK_NAME>
-            ```
+    - Random-action agent
+
+      ```bash
+      # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+      python scripts/random_agent.py --task=<TASK_NAME>
+      ```
 
 ### Set up IDE (Optional)
 
@@ -79,15 +82,16 @@ We provide an example UI extension that will load upon enabling your extension d
 To enable your extension, follow these steps:
 
 1. **Add the search path of this project/repository** to the extension manager:
-    - Navigate to the extension manager using `Window` -> `Extensions`.
-    - Click on the **Hamburger Icon**, then go to `Settings`.
-    - In the `Extension Search Paths`, enter the absolute path to the `source` directory of this project/repository.
-    - If not already present, in the `Extension Search Paths`, enter the path that leads to Isaac Lab's extension directory directory (`IsaacLab/source`)
-    - Click on the **Hamburger Icon**, then click `Refresh`.
+
+   - Navigate to the extension manager using `Window` -> `Extensions`.
+   - Click on the **Hamburger Icon**, then go to `Settings`.
+   - In the `Extension Search Paths`, enter the absolute path to the `source` directory of this project/repository.
+   - If not already present, in the `Extension Search Paths`, enter the path that leads to Isaac Lab's extension directory directory (`IsaacLab/source`)
+   - Click on the **Hamburger Icon**, then click `Refresh`.
 
 2. **Search and enable your extension**:
-    - Find your extension under the `Third Party` category.
-    - Toggle it to enable your extension.
+   - Find your extension under the `Third Party` category.
+   - Toggle it to enable your extension.
 
 ## Code formatting
 
@@ -113,9 +117,7 @@ In this case, add the path to your extension in `.vscode/settings.json` under th
 
 ```json
 {
-    "python.analysis.extraPaths": [
-        "<path-to-ext-repo>/source/ball_balancer"
-    ]
+  "python.analysis.extraPaths": ["<path-to-ext-repo>/source/ball_balancer"]
 }
 ```
 
@@ -132,4 +134,15 @@ Some examples of packages that can likely be excluded are:
 "<path-to-isaac-sim>/extscache/omni.graph.*"        // Graph UI tools
 "<path-to-isaac-sim>/extscache/omni.services.*"     // Services tools
 ...
+```
+
+## Commands
+
+```
+# play scripts also exports the .pt model file
+python .\scripts\random_agent.py --task Template-Ball-Balancer-Direct-v0 --enable_camera
+
+python scripts\skrl\train.py --task=Template-Ball-Balancer-Direct-v0 --ml_framework=torch --algorithm=PPO --num_envs=512 --device=cuda:0 --headless --enable_camera
+
+python .\scripts\zero_agent.py --task Template-Ball-Balancer-Direct-v0 --enable_cameras
 ```

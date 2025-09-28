@@ -71,3 +71,5 @@ tests/
 .isaac-lab-docker-history
 
 debug_images
+
+.vscode
