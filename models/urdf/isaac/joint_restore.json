@@ -1,0 +1,72 @@
+{
+  "units": "meters",
+  "reference": "URDF zero pose; anchors expressed in each link frame",
+  "joints": [
+    {
+      "name": "ball_1",
+      "type": "spherical",
+      "action": "replace revolute",
+      "parent": "upper_link_1_1",
+      "child": "platform_link_1",
+      "parent_anchor_m": [
+        0.017849888097946243,
+        0.000924732225687749,
+        0.09147443614090209
+      ],
+      "child_anchor_m": [
+        -1.1190205376210294e-07,
+        -2.677743122514453e-07,
+        4.361409020881002e-07
+      ],
+      "world_anchor_m": [
+        -0.07902911190205375,
+        -0.006792267774312251,
+        0.1643634361409021
+      ]
+    },
+    {
+      "name": "ball_2",
+      "type": "spherical",
+      "action": "add loop closure",
+      "parent": "upper_link_2_1",
+      "child": "platform_link_1",
+      "parent_anchor_m": [
+        -0.009726165300936916,
+        0.01499591134693673,
+        0.09147443704095293
+      ],
+      "child_anchor_m": [
+        0.12442583469906307,
+        -0.05825308865306327,
+        4.370409529275143e-07
+      ],
+      "world_anchor_m": [
+        0.04539683469906308,
+        -0.06504508865306327,
+        0.16436343704095294
+      ]
+    },
+    {
+      "name": "ball_3",
+      "type": "spherical",
+      "action": "add loop closure",
+      "parent": "upper_link_3_1",
+      "child": "platform_link_1",
+      "parent_anchor_m": [
+        -0.008123720552624052,
+        -0.015920647674170924,
+        0.09147443101802341
+      ],
+      "child_anchor_m": [
+        0.11266127944737594,
+        0.07862935232582907,
+        4.3101802341127815e-07
+      ],
+      "world_anchor_m": [
+        0.03363227944737595,
+        0.07183735232582908,
+        0.16436343101802342
+      ]
+    }
+  ]
+}

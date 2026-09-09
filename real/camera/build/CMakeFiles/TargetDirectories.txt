@@ -1,3 +1,0 @@
-/home/luisluis84/ball_balancer/camera/build/CMakeFiles/camera_capture.dir
-/home/luisluis84/ball_balancer/camera/build/CMakeFiles/edit_cache.dir
-/home/luisluis84/ball_balancer/camera/build/CMakeFiles/rebuild_cache.dir

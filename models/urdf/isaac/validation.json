@@ -1,0 +1,187 @@
+{
+  "links": [
+    {
+      "link": "base_link",
+      "mass_kg": 1.0,
+      "volume_m3": 0.00148482921518489,
+      "center_of_mass_link_m": [
+        -0.024292648240987643,
+        -0.0005947088050237649,
+        0.07846675055280522
+      ],
+      "inertia_eigenvalues": [
+        0.0039187616740701,
+        0.015184920802974013,
+        0.01686326460957819
+      ],
+      "dimensions_m": [
+        0.24148604,
+        0.14845745,
+        0.45147160000000003
+      ],
+      "triangles": 9174,
+      "watertight": true
+    },
+    {
+      "link": "lower_link_1_1",
+      "mass_kg": 0.00908,
+      "volume_m3": 1.395131023889058e-05,
+      "center_of_mass_link_m": [
+        -0.012521068015344375,
+        -0.002672204243857858,
+        -0.0023442521712161435
+      ],
+      "inertia_eigenvalues": [
+        5.550161426635055e-07,
+        2.7175862730953718e-06,
+        2.730669950605454e-06
+      ],
+      "dimensions_m": [
+        0.06337866,
+        0.022000001999999998,
+        0.026949100000000004
+      ],
+      "triangles": 1988,
+      "watertight": true
+    },
+    {
+      "link": "upper_link_1_1",
+      "mass_kg": 0.00738,
+      "volume_m3": 1.032527637818416e-05,
+      "center_of_mass_link_m": [
+        0.007144723229499744,
+        0.0009247324313889785,
+        0.036979771405100004
+      ],
+      "inertia_eigenvalues": [
+        2.705891461907633e-07,
+        4.675607310407133e-06,
+        4.758443991685377e-06
+      ],
+      "dimensions_m": [
+        0.029141349999999996,
+        0.015875002000000003,
+        0.10276784000000001
+      ],
+      "triangles": 906,
+      "watertight": true
+    },
+    {
+      "link": "platform_link_1",
+      "mass_kg": 0.15146,
+      "volume_m3": 0.0003192907796017478,
+      "center_of_mass_link_m": [
+        0.07903591588435747,
+        0.006806888971693043,
+        0.006434210984807315
+      ],
+      "inertia_eigenvalues": [
+        0.0005135934938091222,
+        0.0005137117983857918,
+        0.0010251405352700662
+      ],
+      "dimensions_m": [
+        0.23992410000000003,
+        0.2399094,
+        0.012700099999999992
+      ],
+      "triangles": 1534,
+      "watertight": true
+    },
+    {
+      "link": "lower_link_2_1",
+      "mass_kg": 0.00908,
+      "volume_m3": 1.3948689699171824e-05,
+      "center_of_mass_link_m": [
+        0.008576990922336436,
+        -0.009510791583782742,
+        -0.0023452110437850726
+      ],
+      "inertia_eigenvalues": [
+        5.547620229976608e-07,
+        2.717710496431636e-06,
+        2.7305814466228576e-06
+      ],
+      "dimensions_m": [
+        0.04949652,
+        0.06258459999999999,
+        0.02695352999999999
+      ],
+      "triangles": 1702,
+      "watertight": true
+    },
+    {
+      "link": "upper_link_2_1",
+      "mass_kg": 0.00738,
+      "volume_m3": 1.0325884650431989e-05,
+      "center_of_mass_link_m": [
+        -0.0043739201619739446,
+        0.005725546844948665,
+        0.036983190178467754
+      ],
+      "inertia_eigenvalues": [
+        2.705755783553044e-07,
+        4.6768329139070886e-06,
+        4.759663348621326e-06
+      ],
+      "dimensions_m": [
+        0.026004899999999997,
+        0.02916681000000001,
+        0.10276784000000001
+      ],
+      "triangles": 864,
+      "watertight": true
+    },
+    {
+      "link": "lower_link_3_1",
+      "mass_kg": 0.00908,
+      "volume_m3": 1.3949097137027674e-05,
+      "center_of_mass_link_m": [
+        0.003947735873270446,
+        0.012183056597815954,
+        -0.0023451421570347963
+      ],
+      "inertia_eigenvalues": [
+        5.547694437343733e-07,
+        2.717700069475387e-06,
+        2.730582480233273e-06
+      ],
+      "dimensions_m": [
+        0.044995555000000007,
+        0.06373048,
+        0.02695352999999999
+      ],
+      "triangles": 1710,
+      "watertight": true
+    },
+    {
+      "link": "upper_link_3_1",
+      "mass_kg": 0.00738,
+      "volume_m3": 1.0325887299159467e-05,
+      "center_of_mass_link_m": [
+        -0.002771471157368789,
+        -0.006650281602893368,
+        0.03698318675726607
+      ],
+      "inertia_eigenvalues": [
+        2.7057561577184025e-07,
+        4.676833051144163e-06,
+        4.7596634623772085e-06
+      ],
+      "dimensions_m": [
+        0.0260049,
+        0.029166819999999996,
+        0.10276785000000001
+      ],
+      "triangles": 864,
+      "watertight": true
+    }
+  ],
+  "link_count": 8,
+  "joint_count": 7,
+  "root": "base_link",
+  "servo_limits_status": "-20..100 degrees relative to export zero: Fusion -145 deg; requested physical range -165..-45 deg",
+  "base_mass_status": "1 kg placeholder; base MUST be fixed",
+  "mass_distribution": "Uniform effective density within each mesh; measured total masses",
+  "isaac_sim_tested": false
+}

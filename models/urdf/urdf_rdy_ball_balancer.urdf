@@ -1,0 +1,294 @@
+<?xml version="1.0" ?>
+<robot name="urdf_rdy_ball_balancer">
+<link name="base_link">
+  <inertial>
+    <origin xyz="-0.024235 -0.000606 0.078388" rpy="0 0 0"/>
+    <mass value="11.66992"/>
+    <inertia ixx="0.161644" iyy="0.196584" izz="0.06121" ixy="-0.00091" iyz="0.063885" ixz="-0.020066"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/base_link_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/base_link_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="lower_link_1_1">
+  <inertial>
+    <origin xyz="-0.012522999999999992 -0.002671 -0.002345" rpy="0 0 0"/>
+    <mass value="0.109496"/>
+    <inertia ixx="8e-06" iyy="3.3e-05" izz="3.2e-05" ixy="-2e-06" iyz="0.000501" ixz="-0.000506"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.052317 0.003467 -0.081" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/lower_link_1_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="0.052317 0.003467 -0.081" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/lower_link_1_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="upper_link_1_1">
+  <inertial>
+    <origin xyz="0.007147000000000001 0.0009249999999999996 0.036995" rpy="0 0 0"/>
+    <mass value="0.081091"/>
+    <inertia ixx="5.1e-05" iyy="5.1e-05" izz="5e-06" ixy="-0.0" iyz="0.00073" ixz="-0.000739"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.096879 0.007717 -0.072889" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/upper_link_1_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="0.096879 0.007717 -0.072889" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/upper_link_1_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="platform_link_1">
+  <inertial>
+    <origin xyz="0.079036 0.0068070000000000006 0.006436999999999998" rpy="0 0 0"/>
+    <mass value="2.509008"/>
+    <inertia ixx="0.008524" iyy="0.008523" izz="0.017011" ixy="-1e-06" iyz="4e-06" ixz="-3e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.079029 0.006792 -0.164363" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/platform_link_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="0.079029 0.006792 -0.164363" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/platform_link_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="lower_link_2_1">
+  <inertial>
+    <origin xyz="0.008573999999999998 -0.009509999999999998 -0.002345" rpy="0 0 0"/>
+    <mass value="0.109496"/>
+    <inertia ixx="2.5e-05" iyy="1.6e-05" izz="3.2e-05" ixy="1.2e-05" iyz="-0.000779" ixz="0.000778"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.029161 0.043574 -0.081" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/lower_link_2_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="-0.029161 0.043574 -0.081" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/lower_link_2_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="upper_link_2_1">
+  <inertial>
+    <origin xyz="-0.004374999999999997 0.005726999999999996 0.036995" rpy="0 0 0"/>
+    <mass value="0.081091"/>
+    <inertia ixx="5.1e-05" iyy="5.1e-05" izz="5e-06" ixy="0.0" iyz="-0.00111" ixz="0.001106"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.055123 0.080041 -0.072889" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/upper_link_2_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="-0.055123 0.080041 -0.072889" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/upper_link_2_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="lower_link_3_1">
+  <inertial>
+    <origin xyz="0.003949000000000001 0.012180999999999997 -0.002345" rpy="0 0 0"/>
+    <mass value="0.109496"/>
+    <inertia ixx="2.8e-05" iyy="1.2e-05" izz="3.2e-05" ixy="-1e-05" iyz="0.000279" ixz="-0.000272"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.023156 -0.047041 -0.081" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/lower_link_3_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="-0.023156 -0.047041 -0.081" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/lower_link_3_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<link name="upper_link_3_1">
+  <inertial>
+    <origin xyz="-0.0027720000000000036 -0.006652000000000005 0.036995" rpy="0 0 0"/>
+    <mass value="0.081091"/>
+    <inertia ixx="5.1e-05" iyy="5.1e-05" izz="5e-06" ixy="-0.0" iyz="0.00038" ixz="-0.000367"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.041756 -0.087758 -0.072889" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/upper_link_3_1_m-binary.stl"/>
+    </geometry>
+    <material name="silver">
+      <color rgba="1 0 0 1"/>
+    </material>
+  </visual>
+  <collision>
+    <origin xyz="-0.041756 -0.087758 -0.072889" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://fusion2urdf/urdf_rdy_ball_balancer/bin_stl/upper_link_3_1_m-binary.stl"/>
+    </geometry>
+  </collision>
+</link>
+<joint name="servo_1" type="continuous">
+  <origin xyz="-0.052317 -0.003467 0.081" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="lower_link_1_1"/>
+  <axis xyz="0.0 0.01 0.0"/>
+</joint>
+<transmission name="servo_1_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="servo_1">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="servo_1_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<joint name="elbow_1" type="continuous">
+  <origin xyz="-0.044562 -0.00425 -0.008111" rpy="0 0 0"/>
+  <parent link="lower_link_1_1"/>
+  <child link="upper_link_1_1"/>
+  <axis xyz="0.0 0.01 -0.0"/>
+</joint>
+<transmission name="elbow_1_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="elbow_1">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="elbow_1_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<joint name="ball_1" type="continuous">
+  <origin xyz="0.01785 0.000925 0.091474" rpy="0 0 0"/>
+  <parent link="upper_link_1_1"/>
+  <child link="platform_link_1"/>
+  <axis xyz="0.0 0.0 0.01"/>
+</joint>
+<transmission name="ball_1_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="ball_1">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="ball_1_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<joint name="servo_2" type="continuous">
+  <origin xyz="0.029161 -0.043574 0.081" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="lower_link_2_1"/>
+  <axis xyz="-0.00866 -0.005 -0.0"/>
+</joint>
+<transmission name="servo_2_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="servo_2">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="servo_2_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<joint name="elbow_2" type="continuous">
+  <origin xyz="0.025962 -0.036467 -0.008111" rpy="0 0 0"/>
+  <parent link="lower_link_2_1"/>
+  <child link="upper_link_2_1"/>
+  <axis xyz="-0.00866 -0.005 -0.0"/>
+</joint>
+<transmission name="elbow_2_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="elbow_2">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="elbow_2_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<joint name="servo_3" type="continuous">
+  <origin xyz="0.023156 0.047041 0.081" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="lower_link_3_1"/>
+  <axis xyz="0.00866 -0.005 -0.0"/>
+</joint>
+<transmission name="servo_3_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="servo_3">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="servo_3_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<joint name="elbow_3" type="continuous">
+  <origin xyz="0.0186 0.040717 -0.008111" rpy="0 0 0"/>
+  <parent link="lower_link_3_1"/>
+  <child link="upper_link_3_1"/>
+  <axis xyz="0.00866 -0.005 -0.0"/>
+</joint>
+<transmission name="elbow_3_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="elbow_3">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="elbow_3_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+<gazebo>
+  <plugin name="control" filename="libgazebo_ros_control.so"/>
+</gazebo>
+</robot>

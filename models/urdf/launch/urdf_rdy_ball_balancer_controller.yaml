@@ -1,0 +1,35 @@
+urdf_rdy_ball_balancer_controller:
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50
+
+  # Position Controllers --------------------------------------
+    servo_1_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: servo_1
+      pid: {p: 100.0, i: 0.01, d: 10.0}
+    elbow_1_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: elbow_1
+      pid: {p: 100.0, i: 0.01, d: 10.0}
+    ball_1_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: ball_1
+      pid: {p: 100.0, i: 0.01, d: 10.0}
+    servo_2_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: servo_2
+      pid: {p: 100.0, i: 0.01, d: 10.0}
+    elbow_2_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: elbow_2
+      pid: {p: 100.0, i: 0.01, d: 10.0}
+    servo_3_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: servo_3
+      pid: {p: 100.0, i: 0.01, d: 10.0}
+    elbow_3_position_controller:
+      type: effort_controllers/JointPositionController
+      joint: elbow_3
+      pid: {p: 100.0, i: 0.01, d: 10.0}
