@@ -1,0 +1,143 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.2"
+    }
+    defaultPrim = "urdf_rdy_ball_balancer"
+    doc = """Generated from Composed Stage of root layer /tmp/tmp4zbeh1_x/urdf_rdy_ball_balancer.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_ball_balancer_p5gxwdi7/usdex_ball_balancer/urdf_rdy_ball_balancer.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_ball_balancer_p5gxwdi7/temp_ball_balancer/ball_balancer.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "urdf_rdy_ball_balancer" (
+    prepend apiSchemas = ["IsaacRobotAPI"]
+)
+{
+    prepend rel isaac:physics:robotJoints = [
+        </urdf_rdy_ball_balancer/Physics/root_joint>,
+        </urdf_rdy_ball_balancer/Physics/servo_1>,
+        </urdf_rdy_ball_balancer/Physics/servo_2>,
+        </urdf_rdy_ball_balancer/Physics/servo_3>,
+        </urdf_rdy_ball_balancer/Physics/elbow_1>,
+        </urdf_rdy_ball_balancer/Physics/ball_1>,
+        </urdf_rdy_ball_balancer/Physics/elbow_2>,
+        </urdf_rdy_ball_balancer/Physics/elbow_3>,
+    ]
+    prepend rel isaac:physics:robotLinks = [
+        </urdf_rdy_ball_balancer/Geometry/base_link>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_1_1>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_1_1/upper_link_1_1>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_1_1/upper_link_1_1/platform_link_1>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_2_1>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_2_1/upper_link_2_1>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_3_1>,
+        </urdf_rdy_ball_balancer/Geometry/base_link/lower_link_3_1/upper_link_3_1>,
+    ]
+    token isaac:robotType = "Default"
+
+    over "Geometry"
+    {
+        over "base_link" (
+            prepend apiSchemas = ["IsaacLinkAPI"]
+        )
+        {
+            over "lower_link_1_1" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+                over "upper_link_1_1" (
+                    prepend apiSchemas = ["IsaacLinkAPI"]
+                )
+                {
+                    over "platform_link_1" (
+                        prepend apiSchemas = ["IsaacLinkAPI"]
+                    )
+                    {
+                    }
+                }
+            }
+
+            over "lower_link_2_1" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+                over "upper_link_2_1" (
+                    prepend apiSchemas = ["IsaacLinkAPI"]
+                )
+                {
+                }
+            }
+
+            over "lower_link_3_1" (
+                prepend apiSchemas = ["IsaacLinkAPI"]
+            )
+            {
+                over "upper_link_3_1" (
+                    prepend apiSchemas = ["IsaacLinkAPI"]
+                )
+                {
+                }
+            }
+        }
+    }
+
+    over "Physics"
+    {
+        over "root_joint" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "servo_1" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "elbow_1" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "ball_1" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "servo_2" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "elbow_2" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "servo_3" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+
+        over "elbow_3" (
+            prepend apiSchemas = ["IsaacJointAPI"]
+        )
+        {
+        }
+    }
+}
+

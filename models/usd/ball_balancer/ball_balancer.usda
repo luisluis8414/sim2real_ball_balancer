@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.2"
+    }
+    defaultPrim = "urdf_rdy_ball_balancer"
+    doc = """Generated from Composed Stage of root layer /tmp/tmp4zbeh1_x/urdf_rdy_ball_balancer.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_ball_balancer_p5gxwdi7/usdex_ball_balancer/urdf_rdy_ball_balancer.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_ball_balancer_p5gxwdi7/temp_ball_balancer/ball_balancer.usd
+
+
+Generated from Composed Stage of root layer /tmp/claude-1000/-home-luw-sim2real-ball-balancer/07b51c75-ea5c-45cd-8588-c8f692d21a8d/scratchpad/usd/ball_balancer/payloads/base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "urdf_rdy_ball_balancer" (
+    prepend references = @./payloads/base.usda@
+    variants = {
+        string Physics = "physx"
+    }
+    append variantSets = "Physics"
+)
+{
+    variantSet "Physics" = {
+        "mujoco" (
+            prepend payload = @./payloads/Physics/mujoco.usda@
+        ) {
+
+        }
+        "none" {
+
+        }
+        "physics" (
+            prepend payload = @./payloads/Physics/physics.usda@
+        ) {
+
+        }
+        "physx" (
+            prepend payload = @./payloads/Physics/physx.usda@
+        ) {
+
+        }
+    }
+}
+

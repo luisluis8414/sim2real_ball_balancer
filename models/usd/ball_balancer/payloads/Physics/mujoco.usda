@@ -1,0 +1,228 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.2"
+    }
+    defaultPrim = "urdf_rdy_ball_balancer"
+    doc = """Generated from Composed Stage of root layer /tmp/tmp4zbeh1_x/urdf_rdy_ball_balancer.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_ball_balancer_p5gxwdi7/usdex_ball_balancer/urdf_rdy_ball_balancer.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_ball_balancer_p5gxwdi7/temp_ball_balancer/ball_balancer.usd
+
+
+Generated from Composed Stage of root layer /tmp/claude-1000/-home-luw-sim2real-ball-balancer/07b51c75-ea5c-45cd-8588-c8f692d21a8d/scratchpad/usd/ball_balancer/payloads/base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./physics.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "urdf_rdy_ball_balancer"
+{
+    over "Physics"
+    {
+        def MjcActuator "servo_1_actuator"
+        {
+            uniform double mjc:forceRange:max = 0.5
+            uniform double mjc:forceRange:min = -0.5
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/servo_1>
+        }
+
+        def MjcActuator "elbow_1_actuator"
+        {
+            uniform double mjc:forceRange:max = inf
+            uniform double mjc:forceRange:min = -inf
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/elbow_1>
+        }
+
+        def MjcActuator "ball_1_actuator"
+        {
+            uniform double mjc:forceRange:max = inf
+            uniform double mjc:forceRange:min = -inf
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/ball_1>
+        }
+
+        def MjcActuator "servo_2_actuator"
+        {
+            uniform double mjc:forceRange:max = 0.5
+            uniform double mjc:forceRange:min = -0.5
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/servo_2>
+        }
+
+        def MjcActuator "elbow_2_actuator"
+        {
+            uniform double mjc:forceRange:max = inf
+            uniform double mjc:forceRange:min = -inf
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/elbow_2>
+        }
+
+        def MjcActuator "servo_3_actuator"
+        {
+            uniform double mjc:forceRange:max = 0.5
+            uniform double mjc:forceRange:min = -0.5
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/servo_3>
+        }
+
+        def MjcActuator "elbow_3_actuator"
+        {
+            uniform double mjc:forceRange:max = inf
+            uniform double mjc:forceRange:min = -inf
+            custom rel mjc:target
+            prepend rel mjc:target = </urdf_rdy_ball_balancer/Physics/elbow_3>
+        }
+
+        over "root_joint"
+        {
+        }
+
+        over "servo_1" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "elbow_1" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "ball_1" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "servo_2" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "elbow_2" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "servo_3" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "elbow_3" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+    }
+
+    over "Geometry"
+    {
+        over "base_link"
+        {
+            over "lower_link_1_1"
+            {
+                over "upper_link_1_1"
+                {
+                    over "platform_link_1"
+                    {
+                        over "platform_link_1"
+                        {
+                        }
+
+                        over "platform_link_1_1"
+                        {
+                        }
+                    }
+
+                    over "upper_link_1_1"
+                    {
+                    }
+
+                    over "upper_link_1_1_1"
+                    {
+                    }
+                }
+
+                over "lower_link_1_1"
+                {
+                }
+
+                over "lower_link_1_1_1"
+                {
+                }
+            }
+
+            over "lower_link_2_1"
+            {
+                over "upper_link_2_1"
+                {
+                    over "upper_link_2_1"
+                    {
+                    }
+
+                    over "upper_link_2_1_1"
+                    {
+                    }
+                }
+
+                over "lower_link_2_1"
+                {
+                }
+
+                over "lower_link_2_1_1"
+                {
+                }
+            }
+
+            over "lower_link_3_1"
+            {
+                over "upper_link_3_1"
+                {
+                    over "upper_link_3_1"
+                    {
+                    }
+
+                    over "upper_link_3_1_1"
+                    {
+                    }
+                }
+
+                over "lower_link_3_1"
+                {
+                }
+
+                over "lower_link_3_1_1"
+                {
+                }
+            }
+
+            over "base_link"
+            {
+            }
+        }
+    }
+
+    over "Materials"
+    {
+    }
+
+    over "VisualMaterials"
+    {
+    }
+}
+
