@@ -64,6 +64,60 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-v", "--verbose", action="store_true")
 
 
+def _add_balance_tuning(parser: argparse.ArgumentParser) -> None:
+    """Loop settings beyond the gains; each falls back to the profile's [balance]."""
+    parser.add_argument(
+        "--speed", type=int, default=None,
+        help="servo goal speed while balancing, counts/s",
+    )
+    parser.add_argument(
+        "--smoothing", type=float, default=None,
+        help="weight of each new sample in the derivative filter, 0..1; "
+        "higher is less lag and more noise",
+    )
+    parser.add_argument(
+        "--izone", type=float, default=None,
+        help="mm; the integral only accumulates this close to the target",
+    )
+    parser.add_argument(
+        "--predict", type=float, default=None,
+        help="ms to look ahead, cancelling the loop's dead time; 0 is off",
+    )
+    parser.add_argument(
+        "--plant-gain", type=float, default=None,
+        help="ball acceleration per count of leg swing, mm/s^2, for --predict",
+    )
+
+
+def _balance_settings(args: argparse.Namespace, config: RigConfig) -> dict:
+    """Flag, else the profile's [balance], else the built-in default."""
+    from .control.balance import DEFAULT_GAINS, DEFAULT_MAX_TILT_PCT, QUIET_COUNTS
+
+    tuned = config.balance
+
+    def pick(flag, stored, default):  # noqa: ANN001, ANN202
+        return flag if flag is not None else stored if stored is not None else default
+
+    predict_ms = pick(args.predict, tuned.predict_ms, 0.0)
+    return dict(
+        gains=(
+            pick(args.kp, tuned.kp, DEFAULT_GAINS[0]),
+            pick(args.ki, tuned.ki, DEFAULT_GAINS[1]),
+            pick(args.kd, tuned.kd, DEFAULT_GAINS[2]),
+        ),
+        max_tilt_pct=pick(args.max_tilt, tuned.max_tilt, DEFAULT_MAX_TILT_PCT),
+        acceleration=pick(args.accel, tuned.acceleration, None),
+        speed=pick(args.speed, tuned.speed, None),
+        derivative_smoothing=pick(args.smoothing, tuned.derivative_smoothing, None),
+        integral_zone=pick(args.izone, tuned.integral_zone, None),
+        predict=predict_ms / 1000.0,
+        plant_gain=pick(args.plant_gain, tuned.plant_gain, None),
+        quiet_counts=pick(args.quiet, tuned.quiet, QUIET_COUNTS),
+        aggression=pick(args.aggression, tuned.aggression, 0.0),
+        shape=pick(args.shape, tuned.shape, 1.0),
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ballbal", description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -435,7 +489,7 @@ def build_parser() -> argparse.ArgumentParser:
         "camera calibration when not given",
     )
     bal.add_argument(
-        "--shape", type=float, default=1.0,
+        "--shape", type=float, default=None,
         help="how the aggression is spread between middle and rim; 1 rises in "
         "step with distance, higher holds it back near the middle so the loop "
         "goes quiet sooner as the ball arrives",
@@ -446,7 +500,7 @@ def build_parser() -> argparse.ArgumentParser:
         "and lets the plate twitch on camera noise",
     )
     bal.add_argument(
-        "--aggression", type=float, default=0.0,
+        "--aggression", type=float, default=None,
         help="how much harder to push the further out the ball is; 0 is a "
         "plain loop, 1 to 3 catches a ball about twice as fast, past 4 it "
         "oscillates",
@@ -472,6 +526,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--live", action="store_true",
         help="actually drive the servos; without it nothing moves",
     )
+    _add_balance_tuning(bal)
     bal.add_argument(
         "--mirror", action="store_true",
         help="mirror ball and platform into the running Isaac Sim "
@@ -553,8 +608,9 @@ def build_parser() -> argparse.ArgumentParser:
         path_parser.add_argument("--ki", type=float, default=None)
         path_parser.add_argument("--kd", type=float, default=None)
         path_parser.add_argument("--bearing", type=float, default=None)
-        path_parser.add_argument("--aggression", type=float, default=0.0)
-        path_parser.add_argument("--shape", type=float, default=1.0)
+        path_parser.add_argument("--aggression", type=float, default=None)
+        path_parser.add_argument("--shape", type=float, default=None)
+        _add_balance_tuning(path_parser)
         path_parser.add_argument("--quiet", type=int, default=None)
         path_parser.add_argument("--accel", type=int, default=None)
         path_parser.add_argument("--max-tilt", type=float, default=None)
@@ -633,7 +689,7 @@ def _cmd_track(args: argparse.Namespace) -> int:
         elif args.calibration is not None:
             raise FileNotFoundError(f"no calibration at {path}")
 
-    width, height = DEFAULT_SIZE
+    width, height = calibration.capture_size if calibration is not None else DEFAULT_SIZE
     if calibration is not None and calibration.crop_offset:
         offset = tuple(calibration.crop_offset)
     else:
@@ -703,6 +759,11 @@ def _dispatch(args: argparse.Namespace) -> int:
             f"motion: speed={config.speed} acceleration={config.acceleration} "
             f"tolerance={config.tolerance}"
         )
+        tuned = {
+            key: value for key, value in vars(config.balance).items() if value is not None
+        }
+        if tuned:
+            print("balance: " + " ".join(f"{key}={value}" for key, value in tuned.items()))
         print("axes:")
         for servo in config.servos:
             rest = "-" if servo.rest_position is None else servo.rest_position
@@ -887,8 +948,7 @@ def _dispatch(args: argparse.Namespace) -> int:
             )
 
         if args.command in ("circle", "square"):
-            from .control.balance import Circle, DEFAULT_GAINS, DEFAULT_MAX_TILT_PCT
-            from .control.balance import Square, balance
+            from .control.balance import Circle, Square, balance
             from .vision import AXIS_1_BEARING_DEG, CALIBRATION_NAME, DEFAULT_SIZE
             from .vision import CameraCalibration, find_camera
 
@@ -914,26 +974,14 @@ def _dispatch(args: argparse.Namespace) -> int:
             )
             if args.live:
                 rig.preflight(servos)
-            width, height = DEFAULT_SIZE
+            width, height = cal.capture_size
             return balance(
                 rig, servos,
                 calibration=cal,
                 device=find_camera(args.device),
                 size=(width, height),
-                gains=(
-                    args.kp if args.kp is not None else DEFAULT_GAINS[0],
-                    args.ki if args.ki is not None else DEFAULT_GAINS[1],
-                    args.kd if args.kd is not None else DEFAULT_GAINS[2],
-                ),
                 bearing_deg=heading,
-                max_tilt_pct=(
-                    args.max_tilt if args.max_tilt is not None
-                    else DEFAULT_MAX_TILT_PCT
-                ),
                 path=route,
-                aggression=args.aggression,
-                shape=args.shape,
-                acceleration=args.accel,
                 square=not args.no_square,
                 offset=tuple(cal.crop_offset or (0, 0)),
                 side=cal.crop_side,
@@ -941,11 +989,11 @@ def _dispatch(args: argparse.Namespace) -> int:
                 dry_run=not args.live,
                 show=not args.no_window,
                 log_path=args.log,
-                **({} if args.quiet is None else {"quiet_counts": args.quiet}),
+                **_balance_settings(args, config),
             )
 
         if args.command == "balance":
-            from .control.balance import DEFAULT_GAINS, DEFAULT_MAX_TILT_PCT, balance
+            from .control.balance import balance
             from .vision import AXIS_1_BEARING_DEG, CALIBRATION_NAME, DEFAULT_SIZE
             from .vision import CameraCalibration, find_camera
 
@@ -954,13 +1002,8 @@ def _dispatch(args: argparse.Namespace) -> int:
                 raise FileNotFoundError(
                     f"no camera calibration at {path}; run `ballbal cam-setup`"
                 )
-            width, height = DEFAULT_SIZE
-            gains = (
-                args.kp if args.kp is not None else DEFAULT_GAINS[0],
-                args.ki if args.ki is not None else DEFAULT_GAINS[1],
-                args.kd if args.kd is not None else DEFAULT_GAINS[2],
-            )
             calibration = CameraCalibration.load(path)
+            width, height = calibration.capture_size
             bearing = args.bearing
             if bearing is None:
                 bearing = (
@@ -987,17 +1030,9 @@ def _dispatch(args: argparse.Namespace) -> int:
                     calibration=calibration,
                     device=find_camera(args.device),
                     size=(args.width or width, args.height or height),
-                    gains=gains,
                     bearing_deg=bearing,
-                    max_tilt_pct=(
-                        args.max_tilt if args.max_tilt is not None
-                        else DEFAULT_MAX_TILT_PCT
-                    ),
                     seconds=args.seconds,
-                    acceleration=args.accel,
-                    aggression=args.aggression,
-                    shape=args.shape,
-                    **({} if args.quiet is None else {'quiet_counts': args.quiet}),
+                    **_balance_settings(args, config),
                     square=not args.no_square,
                     offset=tuple(calibration.crop_offset or (0, 0)),
                     side=calibration.crop_side,

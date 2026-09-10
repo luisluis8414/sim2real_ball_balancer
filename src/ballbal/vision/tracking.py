@@ -16,9 +16,9 @@ until then, treat rim readings as approximate.
 
 The camera is capped at 30 fps in firmware, so the frame period is the slowest
 thing in any control loop built on this. Everything here is therefore arranged
-to avoid adding to it: MJPG so the USB link is not the limit, a one-frame
-capture buffer so a frame is never served stale, and a fixed exposure so the
-camera cannot silently drop its own frame rate in dim light.
+to avoid adding to it: a two-frame capture buffer so a frame is never served
+stale, and a fixed exposure so the camera cannot silently drop its own frame
+rate in dim light.
 """
 
 from __future__ import annotations
@@ -138,13 +138,32 @@ def _format_camera_choices(candidates: list[Path]) -> str:
     return "\n".join(
         f"  {index}. {path}" for index, path in enumerate(candidates, start=1)
     )
-DEFAULT_SIZE = (640, 360)
-"""16:9, because every 16:9 mode on this camera shares the full field of view.
+DEFAULT_SIZE = (640, 480)
+"""The capture size new calibrations are made at: 4:3, raw.
 
-Measured across 1920x1080, 1280x720 and 640x360: the ball spans an identical
-18.0% of the frame width in all three. Dropping resolution costs no field of
-view and no frame rate -- only decode and processing time, which is latency the
-control loop would otherwise pay for nothing.
+Every mode on this camera sees the full sensor height; the 4:3 ones only give up
+the sides (they cover x 238..1678 of the 1920x1080 frame, measured by matching
+features between modes). The square crop the tracker works in lives inside
+that anyway, so 4:3 costs nothing and puts 480 pixels across it instead of 360:
+0.474 mm per pixel against 0.632.
+
+All sizes run the same 29.7 fps, and the ball's image lags the plate by 10 to 20
+ms in all of them -- the camera streams rows while it reads them out, so neither
+size nor compression is on the loop's critical path. What differs is noise.
+With the ball at rest, its measured position scatters 0.079 mm rms at 640x360
+MJPG, 0.065 mm at 640x480 MJPG and 0.042 mm at 640x480 raw: compression
+artefacts wobble the ball's edge. Less noise is what lets the derivative be
+smoothed less, and smoothing is phase the loop pays for.
+"""
+
+LEGACY_SIZE = (640, 360)
+"""The size every calibration was made at before calibrations recorded one."""
+
+RAW_SIZES = frozenset({(640, 360), (640, 480)})
+"""Sizes this camera delivers uncompressed (YUYV) at the full 30 fps.
+
+Larger ones fall to 10 or 5 fps raw -- 1080p YUYV negotiates 5 -- so they stay
+MJPG. Raw and MJPG share the field of view exactly at the same size.
 """
 
 DEFAULT_THRESHOLD = 190
@@ -289,15 +308,17 @@ def open_camera(
     device: str, size: tuple[int, int], *, square: bool = True,
     offset: tuple[int, int] = (0, 0), side: int | None = None,
 ) -> Camera:
-    """Open the camera for low latency, not for image quality."""
+    """Open the camera for low latency and a quiet ball position."""
     # By path, not by index: OpenCV's V4L2 backend accepts either, and the
     # path is what survives a replug.
     capture = cv2.VideoCapture(device, cv2.CAP_V4L2)
     if not capture.isOpened():
         raise RuntimeError(f"cannot open {device}")
-    # MJPG first: the default YUYV negotiates 5 fps at 1080p on this camera,
-    # and setting the size before the format can leave it there.
-    capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+    # Format before size: setting the size first can leave the camera in a
+    # slow raw mode. Raw where it runs at full rate (see RAW_SIZES), MJPG
+    # elsewhere.
+    fourcc = "YUYV" if tuple(size) in RAW_SIZES else "MJPG"
+    capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fourcc))
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, size[0])
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, size[1])
     capture.set(cv2.CAP_PROP_FPS, 30)
@@ -855,6 +876,13 @@ class CameraCalibration:
     """
     crop_side: int | None = None
     """Length of the square crop, or None for the largest that fits."""
+    capture: tuple[int, int] | None = None
+    """Capture size the calibration was measured at; None means `LEGACY_SIZE`.
+
+    Needed because ``width``/``height`` are those of the square crop, and the
+    same crop size taken from a 640x480 capture shows a different part of the
+    plate than from 640x360 -- ``check_size`` alone would pass it.
+    """
     bearing_deg: float | None = AXIS_1_BEARING_DEG
     """Which way axis 1 lies, as an angle in the image.
 
@@ -862,6 +890,10 @@ class CameraCalibration:
     but cam-setup writes the 180-degree direction fixed by the mechanical camera
     mount instead of asking the operator to mark it.
     """
+
+    @property
+    def capture_size(self) -> tuple[int, int]:
+        return tuple(self.capture) if self.capture else LEGACY_SIZE
 
     @property
     def has_colour(self) -> bool:
@@ -895,7 +927,7 @@ class CameraCalibration:
         import json
 
         payload = dict(self.__dict__)
-        for key in ("hsv_lo", "hsv_hi"):
+        for key in ("hsv_lo", "hsv_hi", "capture"):
             if payload[key] is not None:
                 payload[key] = list(payload[key])
         return json.dumps(payload, indent=2) + "\n"
@@ -905,7 +937,7 @@ class CameraCalibration:
         import json
 
         payload = json.loads(path.read_text())
-        for key in ("hsv_lo", "hsv_hi"):
+        for key in ("hsv_lo", "hsv_hi", "capture"):
             if payload.get(key) is not None:
                 payload[key] = tuple(payload[key])
         return cls(**payload)
@@ -1087,6 +1119,7 @@ def calibrate_camera(
         platform_mm=platform_mm,
         hsv_lo=hsv_lo,
         hsv_hi=hsv_hi,
+        capture=tuple(size),
     )
     target = output or Path(CALIBRATION_NAME)
     target.write_text(calibration.to_json())
@@ -1592,6 +1625,7 @@ def guided_camera_setup(
         hsv_lo=hsv_lo, hsv_hi=hsv_hi, bearing_deg=bearing_deg,
         crop_offset=tuple(capture.offset),
         crop_side=capture.side,
+        capture=tuple(size),
     )
     target = output or Path(CALIBRATION_NAME)
     target.write_text(calibration.to_json())

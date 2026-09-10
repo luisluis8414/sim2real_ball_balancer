@@ -76,6 +76,51 @@ class ServoConfig:
 
 
 @dataclass(frozen=True)
+class BalanceConfig:
+    """How `ballbal balance` drives this platform: the optional ``[balance]`` table.
+
+    Tuned values belong to one physical platform -- the dead time comes from its
+    servos and camera, the plant gain from its plate and ball -- so they live in
+    its profile next to the limits, not in the code. Every key is optional; a
+    missing one falls back to the built-in default, and a command-line flag
+    overrides both. Units match the flags: gains in tilt fraction per mm
+    (per mm*s, per mm/s), so they go with ``max_tilt``.
+    """
+
+    kp: float | None = None
+    ki: float | None = None
+    kd: float | None = None
+    max_tilt: float | None = None
+    """Percent of each axis's headroom a full lean may use."""
+    acceleration: int | None = None
+    """Servo ramp during balancing only; rig-wide ``acceleration`` stays for moves."""
+    speed: int | None = None
+    """Servo goal speed during balancing only, counts/s."""
+    derivative_smoothing: float | None = None
+    integral_zone: float | None = None
+    """mm; the integral only accumulates this close to the target."""
+    predict_ms: float | None = None
+    """Look-ahead that cancels the loop's dead time; 0 turns it off."""
+    plant_gain: float | None = None
+    """Ball acceleration per count of leg swing, mm/s^2 (from `ballbal tune`)."""
+    quiet: int | None = None
+    aggression: float | None = None
+    shape: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.max_tilt is not None and not 0 < self.max_tilt <= 100:
+            raise ValueError("[balance] max_tilt must be greater than 0 and at most 100")
+        if self.acceleration is not None and not 0 < self.acceleration <= 254:
+            raise ValueError("[balance] acceleration must be 1..254")
+        if self.speed is not None and not 0 < self.speed <= 3400:
+            raise ValueError("[balance] speed must be 1..3400 counts/s")
+        if self.derivative_smoothing is not None and not 0 < self.derivative_smoothing <= 1:
+            raise ValueError("[balance] derivative_smoothing must be in (0, 1]")
+        if self.predict_ms is not None and not 0 <= self.predict_ms <= 300:
+            raise ValueError("[balance] predict_ms must be 0..300")
+
+
+@dataclass(frozen=True)
 class RigConfig:
     """The whole rig: which servos, on which port, moving how fast."""
 
@@ -92,6 +137,7 @@ class RigConfig:
     tolerance: int = 8
     home_offset: int | None = None
     max_offset: int | None = None
+    balance: BalanceConfig = field(default_factory=BalanceConfig)
     source: Path | None = field(default=None, compare=False)
     calibration_source: Path | None = field(default=None, compare=False)
 
@@ -161,6 +207,13 @@ class RigConfig:
         with resolved.open("rb") as handle:
             raw = tomllib.load(handle)
 
+        balance_table = raw.pop("balance", {})
+        known_balance = set(BalanceConfig.__dataclass_fields__)
+        if set(balance_table) - known_balance:
+            raise ValueError(
+                f"{resolved} [balance] has unknown keys: "
+                f"{', '.join(sorted(set(balance_table) - known_balance))}"
+            )
         servo_tables = raw.pop("servo", None)
         if not servo_tables:
             raise ValueError(f"{resolved} defines no [[servo]] entries")
@@ -240,6 +293,7 @@ class RigConfig:
         )
         known = {f.name for f in cls.__dataclass_fields__.values()} - {
             "servos",
+            "balance",
             "source",
             "calibration_source",
         }
@@ -250,6 +304,7 @@ class RigConfig:
             )
         return cls(
             servos=servos,
+            balance=BalanceConfig(**balance_table),
             source=resolved,
             calibration_source=calibration_source or resolved,
             **raw,

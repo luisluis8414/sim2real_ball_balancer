@@ -204,6 +204,17 @@ class PID:
     pinned from then on, worth 0.0005 of tilt -- present in the sum, absent from
     the plate.
     """
+    integral_zone: float | None = None
+    """Only accumulate while the error is within this many millimetres.
+
+    The integral is there for the last few millimetres -- a plate that is not
+    quite level, a spot the ball sticks in -- and those need it strong: from
+    rest the ball does not roll until about 12 counts of lean, which at the
+    old rate took the integral many seconds to find. But a strong integral
+    left running through an 80 mm jump collects the whole transit, about 30
+    counts' worth, and spends it pushing the ball past the target. Gating it
+    to the neighbourhood of the setpoint lets it be both.
+    """
     output_limit: float = 1.0
     derivative_smoothing: float = 0.35
     """Low-pass on the derivative, as the weight given to each new sample.
@@ -239,7 +250,8 @@ class PID:
             raise ValueError("dt must be positive")
         error = setpoint - measurement
 
-        self.integral += error * dt
+        if self.integral_zone is None or abs(error) <= self.integral_zone:
+            self.integral += error * dt
         if self.ki:
             bound = self.integral_limit / self.ki
             self.integral = max(-bound, min(bound, self.integral))
@@ -260,6 +272,86 @@ class PID:
             + self.kd * scale * self._derivative
         )
         return max(-self.output_limit, min(self.output_limit, output))
+
+
+@dataclass
+class Predictor:
+    """Where the ball will be once the leans already sent have taken effect.
+
+    The loop's dead time is not in the controller's gift: a lean written now
+    moves the ball 103 to 118 ms later at acceleration 254 and 136 ms at 30
+    (servo, camera and frame timing together; docs/balance.md), and every
+    command written during that time is already committed. So the position the camera
+    reports is out of date by exactly the part the controller can still do
+    something about, while the part it cannot change is known: those committed
+    commands, pushed through the measured plant gain.
+
+    Predicting ``horizon`` ahead -- the present position, plus the present
+    velocity times the horizon, plus what the committed leans will add -- and
+    controlling on that takes most of the dead time out of the loop's phase.
+    Measured on the rig, 60 ms ahead it misses where the ball really gets to by
+    0.9 mm rms, against 3.4 mm for the unpredicted position; at unchanged gains
+    it cut the overshoot of an 80 mm jump from 4.9 to 2.6 mm, and it is what
+    lets kp run at 3.9 counts/mm where about 2 was the limit without it. A
+    horizon somewhat shorter than the full dead time is the robust choice: the
+    velocity term multiplies camera noise by the horizon.
+    """
+
+    horizon: float
+    """Seconds to look ahead; 0 turns prediction off."""
+    gain: float
+    """Ball acceleration per unit of commanded tilt, mm/s^2."""
+    velocity_smoothing: float = 0.5
+    _sent: list[tuple[float, tuple[float, float]]] = field(default_factory=list, init=False)
+    _last: tuple[float, float, float] | None = field(default=None, init=False)
+    _velocity: tuple[float, float] = field(default=(0.0, 0.0), init=False)
+
+    def reset(self) -> None:
+        self._sent.clear()
+        self._last = None
+        self._velocity = (0.0, 0.0)
+
+    def sent(self, t: float, tilt: tuple[float, float]) -> None:
+        """A lean was written at ``t``. Stored as the plate will hold it: at most full scale."""
+        magnitude = math.hypot(*tilt)
+        if magnitude > 1.0:
+            tilt = (tilt[0] / magnitude, tilt[1] / magnitude)
+        self._sent.append((t, tilt))
+        # Keep what can still matter: every lean sent within the horizon, and
+        # the one before them, which is what the plate holds as the horizon opens.
+        while len(self._sent) > 1 and self._sent[1][0] <= t - self.horizon:
+            self._sent.pop(0)
+
+    def __call__(self, t: float, position: tuple[float, float]) -> tuple[float, float]:
+        if self._last is not None and t > self._last[0]:
+            dt = t - self._last[0]
+            alpha = self.velocity_smoothing
+            self._velocity = (
+                alpha * (position[0] - self._last[1]) / dt + (1 - alpha) * self._velocity[0],
+                alpha * (position[1] - self._last[2]) / dt + (1 - alpha) * self._velocity[1],
+            )
+        self._last = (t, position[0], position[1])
+        if self.horizon <= 0:
+            return position
+        end = t + self.horizon
+        # Each lean acts from its send time plus the horizon until the next one
+        # does; integrate the acceleration they give twice over [t, end].
+        extra = [0.0, 0.0]
+        for index, (sent_at, tilt) in enumerate(self._sent):
+            start = max(sent_at + self.horizon, t)
+            stop = (
+                min(self._sent[index + 1][0] + self.horizon, end)
+                if index + 1 < len(self._sent) else end
+            )
+            if stop <= start:
+                continue
+            weight = ((end - start) ** 2 - (end - stop) ** 2) / 2.0
+            extra[0] += self.gain * tilt[0] * weight
+            extra[1] += self.gain * tilt[1] * weight
+        return (
+            position[0] + self._velocity[0] * self.horizon + extra[0],
+            position[1] + self._velocity[1] * self.horizon + extra[1],
+        )
 
 
 def plan(
@@ -308,6 +400,17 @@ slow enough to matter, 38 degrees of the 44 degrees of phase margin goes with
 it. Declining to send the command costs nothing instead. Real ball motion is
 nowhere near this small -- a ball at 50 mm/s already asks for 43 counts -- so
 the threshold only ever suppresses noise.
+"""
+
+DEFAULT_PLANT_GAIN = 4.15
+"""Ball acceleration per count of leg swing, mm/s^2.
+
+Fitted from logs of target jumps on the author's platform
+(tools/balance/fit_delay.py): 3.9 to 4.2 mm/s^2 per count, the same whatever
+tilt cap was set -- which is why it is kept per count and not per unit of tilt,
+whose size moves with ``--max-tilt``. Used only to predict (`Predictor`);
+another plate or ball wants its own value, stored as the profile's
+``[balance] plant_gain``.
 """
 
 LOST_BALL_GRACE = 0.4
@@ -408,6 +511,11 @@ def balance(
     quiet_counts: int = QUIET_COUNTS,
     seconds: float | None = None,
     acceleration: int | None = None,
+    speed: int | None = None,
+    derivative_smoothing: float | None = None,
+    integral_zone: float | None = None,
+    predict: float = 0.0,
+    plant_gain: float | None = None,
     square: bool = True,
     offset: tuple[int, int] = (0, 0),
     side: int | None = None,
@@ -423,6 +531,9 @@ def balance(
     with torque never enabled. That is the only way to check the sign of the
     correction and the size of the gains without a mechanism that can throw a
     ball across the room while it is being checked.
+
+    ``predict`` is the look-ahead in seconds (see `Predictor`), with
+    ``plant_gain`` the ball's acceleration per count of leg swing.
 
     ``mirror`` copies every frame's ball and the platform's measured pose into
     Isaac Sim. It costs the loop one sync read of the positions, about a
@@ -451,6 +562,13 @@ def balance(
         PID(kp=gains[0], ki=gains[1], kd=gains[2]),
         PID(kp=gains[0], ki=gains[1], kd=gains[2]),
     )
+    if derivative_smoothing is not None:
+        for controller in controllers:
+            controller.derivative_smoothing = derivative_smoothing
+    for controller in controllers:
+        controller.integral_zone = integral_zone
+    gain_per_count = plant_gain if plant_gain is not None else DEFAULT_PLANT_GAIN
+    predictor = Predictor(horizon=predict, gain=gain_per_count * kinematics.reach)
     print(
         f"  gains kp={gains[0]:.4f} ki={gains[1]:.5f} kd={gains[2]:.4f}\n"
         f"  bearing {bearing_deg:.1f} deg\n"
@@ -472,6 +590,12 @@ def balance(
             f"\n  acceleration {acceleration} (rig default overridden)"
             if acceleration is not None
             else ""
+        )
+        + (f"\n  speed {speed} counts/s (rig default overridden)" if speed is not None else "")
+        + (
+            f"\n  predicting {predict * 1000:.0f} ms ahead with {gain_per_count:.2f} "
+            "mm/s^2 per count"
+            if predict > 0 else ""
         )
     )
     # Moving the neutral away from mid-travel silently rescales the plant: the
@@ -546,7 +670,7 @@ def balance(
             writer.writerow(
                 ["t_s", "dt_s", "found", "x_mm", "y_mm", "tilt_x", "tilt_y",
                  "goal_1", "goal_2", "goal_3", "sent",
-                 "target_x", "target_y"]
+                 "target_x", "target_y", "predicted_x", "predicted_y"]
             )
 
         for _ in range(15):  # the 268 ms opening transient
@@ -560,7 +684,7 @@ def balance(
                 else _NullGuard():
             if not dry_run:
                 rig.goto(kinematics.level(), acceleration=acceleration,
-                         settle=0.6)
+                         speed=speed, settle=0.6)
             while True:
                 ok, frame = capture.read()
                 if not ok:
@@ -584,6 +708,7 @@ def balance(
                         goals = kinematics.level()
                         for controller in controllers:
                             controller.reset()
+                        predictor.reset()
                         tilt = (0.0, 0.0)
                         x_mm = y_mm = float("nan")
                     else:
@@ -597,10 +722,11 @@ def balance(
                         target_mm = path.at(elapsed)
                     x_mm = (detection.x - centre[0]) * calibration.mm_per_px
                     y_mm = (detection.y - centre[1]) * calibration.mm_per_px
-                    distance = math.hypot(x_mm - target_mm[0], y_mm - target_mm[1])
+                    ahead = predictor(now, (x_mm, y_mm))
+                    distance = math.hypot(ahead[0] - target_mm[0], ahead[1] - target_mm[1])
                     scale = gain_scale(distance, platform_mm, aggression, shape)
                     tilt = _tilt_from_controllers(
-                        controllers, target_mm, (x_mm, y_mm), dt, scale
+                        controllers, target_mm, ahead, dt, scale
                     )
                     goals = kinematics.goals(*tilt)
 
@@ -612,10 +738,11 @@ def balance(
                     ):
                         sent = False  # nothing worth moving for
                 if sent and not dry_run:
-                    rig.goto(goals, acceleration=acceleration)
+                    rig.goto(goals, acceleration=acceleration, speed=speed)
                 if sent:
                     last_goals = dict(goals)
                     applied_tilt = tilt
+                    predictor.sent(now, tilt)
 
                 if mirror is not None:
                     # The measured pose, not the goal: what the plate really
@@ -646,7 +773,9 @@ def balance(
                          "" if detection is None else f"{y_mm:.2f}",
                          f"{applied_tilt[0]:.4f}", f"{applied_tilt[1]:.4f}",
                          *ordered, int(sent),
-                         f"{target_mm[0]:.2f}", f"{target_mm[1]:.2f}"]
+                         f"{target_mm[0]:.2f}", f"{target_mm[1]:.2f}",
+                         "" if detection is None else f"{ahead[0]:.2f}",
+                         "" if detection is None else f"{ahead[1]:.2f}"]
                     )
 
                 if show:

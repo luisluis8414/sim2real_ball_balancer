@@ -109,7 +109,10 @@ ballbal cam-setup
 
 Both commands are interactive. Camera selection is stored by its stable device
 path; later commands do not need `--device`. Camera setup records the platform
-frame, image scale and ball colour in the active profile.
+frame, image scale, ball colour and capture mode (640x480 raw) in the active
+profile. The platform centre is the centre of the crop: if the plate does not
+sit centred vertically, shrink the crop with `,` until the arrow keys move it up
+or down.
 
 ### 5. Verify and run
 
@@ -129,4 +132,6 @@ ballbal balance --live
 ```
 
 Use `Ctrl-C` to stop; the command releases servo torque. Detailed commands and
-safety behaviour are documented in [`docs/control.md`](control.md).
+safety behaviour are documented in [`docs/control.md`](control.md). How fast
+balancing can be, and how to tune it for a platform, is in
+[`docs/balance.md`](balance.md).

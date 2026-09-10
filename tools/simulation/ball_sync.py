@@ -50,7 +50,7 @@ def main() -> int:
     import numpy as np
 
     from ballbal.control.rig import Rig
-    from ballbal.vision import (AXIS_1_BEARING_DEG, DEFAULT_SIZE, WARMUP_FRAMES, CameraCalibration,
+    from ballbal.vision import (AXIS_1_BEARING_DEG, WARMUP_FRAMES, CameraCalibration,
                                 find_ball_by_colour, find_camera, lock_camera, open_camera)
 
     path = args.calibration or active_profile_dir() / "camera.json"
@@ -74,7 +74,7 @@ def main() -> int:
             if args.rig:
                 rig = stack.enter_context(Rig.open(RigConfig.load(active_profile_dir() / "rig.toml")))
             lock_camera(device)
-            capture = open_camera(device, DEFAULT_SIZE, square=True,
+            capture = open_camera(device, cal.capture_size, square=True,
                                   offset=tuple(cal.crop_offset or (0, 0)), side=cal.crop_side)
             stack.callback(capture.release)
             if not args.no_window:
