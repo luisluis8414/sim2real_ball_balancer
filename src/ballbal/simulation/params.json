@@ -1,0 +1,45 @@
+{
+  "servo": "Feetech STS3215 (model 777, firmware 3), 3 axes on one bus, ballbal",
+  "identified": "2026-09-10, runtime/measurements/servo_model/steps_20260910_121321.csv, see README.md",
+  "identified_at": {
+    "goal_speed": 2650,
+    "goal_acceleration": 100
+  },
+  "operating_point": {
+    "supply_v": 5.4,
+    "goal_speed": 2650,
+    "goal_acceleration": 100,
+    "p_coefficient": 32,
+    "d_coefficient": 32,
+    "i_coefficient": 0,
+    "max_torque_limit": 1000,
+    "protection_current": 500,
+    "overload_torque": 80
+  },
+  "model": {
+    "description": "goal -> dead time -> trapezoid (accel/decel/v_max, re-planned per goal) -> first-order lag",
+    "delay_s": 0.0155,
+    "accel_counts_s2": 10142,
+    "decel_counts_s2": 13976,
+    "v_max_counts_s": 2481,
+    "tau_s": 0.0347,
+    "fit_rms_counts": 2.74,
+    "fit_rms_deg": 0.241
+  },
+  "measured": {
+    "dead_time_first_3_counts_s": 0.069,
+    "v_max_up_counts_s": 2437,
+    "v_max_down_counts_s": 2528,
+    "v_max_speed0_acc0_counts_s": 2448,
+    "accel_speed0_acc0_counts_s2": 27525,
+    "dead_time_speed0_acc0_s": 0.054,
+    "final_error_counts": "-3..+2 (approach-direction dependent)"
+  },
+  "sim_joints": {
+    "1": "servo_1",
+    "2": "servo_3",
+    "3": "servo_2"
+  },
+  "cad_lower_link_base_contact_deg": -21.45,
+  "mapping": "Rig values (min/max/home/rest, speed, acceleration) are merged from profiles/platform-v2/rig.toml and calibration.toml by src/ballbal/simulation/profile.py; nothing about the rig is duplicated here. sim joint angle = (counts - zero) * 360/4096 deg with zero = rest_position - cad_lower_link_base_contact_deg * 4096/360: rest_position is the rig seated on the base (`ballbal rest`), which is the CAD contact angle. sim_joints: rig servo id -> sim joint (IDs run clockwise from above)."
+}
