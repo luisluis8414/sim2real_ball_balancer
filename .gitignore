@@ -1,2 +1,19 @@
-__pycache__
-data
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.deps/
+build/
+dist/
+*.egg-info/
+*.bak
+
+# Logs, raw measurements and caches are local runtime artifacts. Durable
+# calibration belongs in profiles/, identified simulation parameters in
+# src/ballbal/simulation/.
+runtime/*
+!runtime/README.md
+
+# Local profile created by the documented quickstart. The hardware snapshot
+# intentionally published with this repository is profiles/platform-v2/.
+profiles/my-platform/

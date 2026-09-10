@@ -1,0 +1,11 @@
+# Initial values only. `ballbal setup` replaces them with measured limits.
+format_version = 1
+
+[axis.axis_1]
+min_position = 0
+
+[axis.axis_2]
+min_position = 0
+
+[axis.axis_3]
+min_position = 0

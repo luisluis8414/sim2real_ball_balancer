@@ -1,0 +1,12 @@
+# REFERENCE ONLY: encoder minima measured on the repository author's hardware.
+# They are not calibration defaults for another physical platform.
+format_version = 1
+
+[axis.axis_1]
+min_position = 934
+
+[axis.axis_2]
+min_position = 432
+
+[axis.axis_3]
+min_position = 485

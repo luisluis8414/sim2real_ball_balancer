@@ -1,0 +1,26 @@
+{
+  "centre_x": 164.0,
+  "centre_y": 164.0,
+  "platform_radius_px": 158.0,
+  "mm_per_px": 0.6411456408558164,
+  "width": 328,
+  "height": 328,
+  "ball_mm": 40.0,
+  "platform_mm": null,
+  "hsv_lo": [
+    0,
+    18,
+    40
+  ],
+  "hsv_hi": [
+    60,
+    255,
+    255
+  ],
+  "crop_offset": [
+    24,
+    -19
+  ],
+  "crop_side": 328,
+  "bearing_deg": 180.0
+}
