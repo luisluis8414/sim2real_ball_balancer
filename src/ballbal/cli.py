@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import sys
 from pathlib import Path
@@ -470,6 +471,11 @@ def build_parser() -> argparse.ArgumentParser:
     bal.add_argument(
         "--live", action="store_true",
         help="actually drive the servos; without it nothing moves",
+    )
+    bal.add_argument(
+        "--mirror", action="store_true",
+        help="mirror ball and platform into the running Isaac Sim "
+        "(its Python Server must be up, see docs/simulation.md)",
     )
 
     tune_parser = subparsers.add_parser(
@@ -968,29 +974,38 @@ def _dispatch(args: argparse.Namespace) -> int:
                 from .control.balance import check_tilt
 
                 return check_tilt(rig, servos, bearing_deg=bearing)
-            return balance(
-                rig, servos,
-                calibration=calibration,
-                device=find_camera(args.device),
-                size=(args.width or width, args.height or height),
-                gains=gains,
-                bearing_deg=bearing,
-                max_tilt_pct=(
-                    args.max_tilt if args.max_tilt is not None
-                    else DEFAULT_MAX_TILT_PCT
-                ),
-                seconds=args.seconds,
-                acceleration=args.accel,
-                aggression=args.aggression,
-                shape=args.shape,
-                **({} if args.quiet is None else {'quiet_counts': args.quiet}),
-                square=not args.no_square,
-                offset=tuple(calibration.crop_offset or (0, 0)),
-                side=calibration.crop_side,
-                dry_run=not args.live,
-                show=not args.no_window,
-                log_path=args.log,
-            )
+            mirror = contextlib.nullcontext()
+            if args.mirror:
+                # Connected before anything moves: an unreachable Isaac Sim ends
+                # the run here, not halfway through a balance.
+                from .simulation.mirror import Mirror
+
+                mirror = Mirror(bearing_deg=bearing, ball_mm=calibration.ball_mm)
+            with mirror as mirroring:
+                return balance(
+                    rig, servos,
+                    calibration=calibration,
+                    device=find_camera(args.device),
+                    size=(args.width or width, args.height or height),
+                    gains=gains,
+                    bearing_deg=bearing,
+                    max_tilt_pct=(
+                        args.max_tilt if args.max_tilt is not None
+                        else DEFAULT_MAX_TILT_PCT
+                    ),
+                    seconds=args.seconds,
+                    acceleration=args.accel,
+                    aggression=args.aggression,
+                    shape=args.shape,
+                    **({} if args.quiet is None else {'quiet_counts': args.quiet}),
+                    square=not args.no_square,
+                    offset=tuple(calibration.crop_offset or (0, 0)),
+                    side=calibration.crop_side,
+                    dry_run=not args.live,
+                    show=not args.no_window,
+                    log_path=args.log,
+                    mirror=mirroring,
+                )
 
         if args.command == "neutral":
             from .control.balance import plan

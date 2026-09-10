@@ -1383,6 +1383,7 @@ def guided_camera_setup(
 
     # One width for both steps, so the picture keeps its size when they change.
     panel = panel_width([line for help_lines in _HELP.values() for line in help_lines])
+    sized = False
     step = "platform"
     centre: tuple[int, int] | None = None
     radius: int = 0
@@ -1508,6 +1509,10 @@ def guided_camera_setup(
                 )
             canvas, origin = beside_panel(view, lines, panel)
             state.update(scale=factor, origin=origin, size=(width, height))
+            if not sized:
+                # The window opens in the canvas's shape, so nothing is letterboxed.
+                cv2.resizeWindow(window, round(720 * canvas.shape[1] / canvas.shape[0]), 720)
+                sized = True
             cv2.imshow(window, canvas)
             # waitKeyEx, not waitKey: the arrow keys carry information above the
             # low byte on some backends, and masking it off first throws away

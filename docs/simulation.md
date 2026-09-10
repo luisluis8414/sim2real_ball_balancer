@@ -131,21 +131,39 @@ All scripts run from the repository root with the repository environment.
 | `python tools/simulation/sim.py run FILE` | Run an Isaac-side Python file inside Isaac Sim |
 | [`python tools/simulation/platform_sweep.py`](../tools/simulation/platform_sweep.py) | All axes min ↔ max, then home |
 | [`python tools/simulation/set_home_pose.py`](../tools/simulation/set_home_pose.py) | Save the calibrated home pose as the scene's stage pose |
-| [`python tools/simulation/ball_sync.py`](../tools/simulation/ball_sync.py) | Mirror the real ball (and optionally the platform) into the simulation |
+| `ballbal balance --mirror` | Balance and mirror ball and platform into the simulation |
+| [`python tools/simulation/ball_sync.py`](../tools/simulation/ball_sync.py) | Mirror the real ball (and optionally the platform) without balancing |
 | [`python tools/simulation/compare_real.py`](../tools/simulation/compare_real.py) | Command real and simulated platforms side by side |
 | [`identify.py`](../tools/simulation/identify.py), [`identify_tracking.py`](../tools/simulation/identify_tracking.py), [`analyze.py`](../tools/simulation/analyze.py) | Record and fit the servo model, see [servo-model.md](servo-model.md) |
 
 Commands that move the platform run `start` first, so they work on a freshly
 launched Isaac Sim.
 
-## Mirror the real ball
+## Mirror the real ball and platform
+
+While balancing, add `--mirror`:
+
+```bash
+ballbal balance --mirror            # dry run: real ball, still platform
+ballbal balance --live --mirror     # the simulation follows the balancing rig
+```
+
+Every loop frame sends the tracked ball and the platform's measured servo
+positions to Isaac Sim. It costs the loop one sync read of the positions, about
+a millisecond. Isaac Sim must be running with its Python Server. The mirror
+connects before anything moves, so an unreachable simulation stops the command
+before torque is enabled. If Isaac Sim fails later, the mirror stops with one
+warning and balancing carries on.
+
+Without balancing, only the camera (and optionally the bus) is needed:
 
 ```bash
 python tools/simulation/ball_sync.py          # ball only
 python tools/simulation/ball_sync.py --rig    # ball and real platform pose
 ```
 
-Every camera frame the ball is found the way `ballbal balance` finds it. The
+Both use [`mirror.py`](../src/ballbal/simulation/mirror.py). Every camera frame
+the ball is found the way `ballbal balance` finds it. The
 profile's `camera.json` supplies crop, plate centre, mm/px, ball colour and the
 bearing of axis_1. The position is converted into the **plate frame** shared
 with the simulation:
@@ -160,10 +178,11 @@ only, so it never pushes the mechanism, and it lives in the session layer, so it
 is never saved into `scene.usda`. When the camera loses the ball, the marker is
 hidden.
 
-With `--rig` the real servo positions are read every frame. Torque is not
-touched and nothing moves. The simulated axes are held at those readings, so the
-simulated plate leans like the real one. The servo bus serves one process at a
-time, so `--rig` does not run alongside `ballbal balance` or `ballbal jog`.
+The platform is mirrored from the measured servo positions, not from the goals:
+the simulated axes are held at the readings, so the simulated plate leans like
+the real one, servo lag included. `ball_sync.py --rig` reads them without
+touching torque. The servo bus serves one process at a time, so `--rig` does not
+run alongside `ballbal balance` or `ballbal jog`; use `balance --mirror` there.
 
 Isaac Sim usually accepts fewer updates per second than the camera delivers
 (about 22 against 30 on the author's machine). The script forwards only the

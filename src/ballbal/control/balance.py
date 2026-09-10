@@ -414,6 +414,7 @@ def balance(
     dry_run: bool = True,
     show: bool = True,
     log_path=None,  # noqa: ANN001 - Path
+    mirror=None,  # noqa: ANN001 - simulation.mirror.Mirror
 ) -> int:
     """Close the loop: see the ball, lean the plate, repeat.
 
@@ -422,12 +423,17 @@ def balance(
     with torque never enabled. That is the only way to check the sign of the
     correction and the size of the gains without a mechanism that can throw a
     ball across the room while it is being checked.
+
+    ``mirror`` copies every frame's ball and the platform's measured pose into
+    Isaac Sim. It costs the loop one sync read of the positions, about a
+    millisecond on this bus; the simulation itself is fed from another thread.
     """
     import csv
     import time
 
     import cv2
 
+    from ..hardware.bus import BusError, ServoError
     from ..vision import find_ball_by_colour, lock_camera, open_camera
 
     if not calibration.has_colour:
@@ -504,6 +510,8 @@ def balance(
             print(f"  NOTE: {note}")
     if dry_run:
         print("  DRY RUN -- torque stays off, nothing moves")
+    if mirror is not None:
+        print("  mirroring ball and platform into Isaac Sim")
 
     lock_camera(device)
     capture = open_camera(device, size, square=square, offset=offset, side=side)
@@ -609,6 +617,18 @@ def balance(
                     last_goals = dict(goals)
                     applied_tilt = tilt
 
+                if mirror is not None:
+                    # The measured pose, not the goal: what the plate really
+                    # holds, servo lag and all, and in a dry run the plate that
+                    # is not moving. A failed read skips one frame's pose
+                    # rather than stopping a loop that is holding a ball.
+                    try:
+                        pose = rig.positions(servos)
+                    except (BusError, ServoError):
+                        pose = None
+                    seen = detection is not None
+                    mirror.send(x_mm if seen else None, y_mm if seen else None, pose)
+
                 # Every frame gets a row, whether or not a command went out, and
                 # the tilt recorded is the one the plate is actually holding.
                 # Logging only the frames that produced a command was the first
@@ -658,6 +678,8 @@ def balance(
             rig.bus.set_torque([s.id for s in servos], False)
 
     print(f"\n  {samples} frames with a ball, {lost} without")
+    if mirror is not None:
+        print(f"  {mirror.sent} updates mirrored into Isaac Sim ({mirror.rate:.1f}/s)")
     if log_path is not None:
         print(f"  log written to {log_path}")
     return 0
