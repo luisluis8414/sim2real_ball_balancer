@@ -1,7 +1,8 @@
 """STS3215 servos for the Isaac Sim ball balancer, driven in encoder counts like the real rig.
 
-Open ``models/usd/scene.usda`` in Isaac Sim, then run this file in the Script Editor
-(or execute it through the Python Server). Afterwards, in the same interpreter:
+Runs inside Isaac Sim. From the repository, ``python tools/simulation/sim.py start`` opens
+``models/usd/scene.usda``, sends this file through the Python Server and presses Play (see
+``remote.py``); the Script Editor works too. Afterwards, in the same interpreter:
 
     servos.goto({1: 1800, 2: 1300, 3: 1400})   # axis ids -> counts, exactly like Rig.goto
 
@@ -145,6 +146,16 @@ class SimServos:
 
     def home(self, speed=None):
         return self.goto({i: a.home for i, a in self.axes.items()}, speed)
+
+    def follow(self, positions):
+        """Hold the axes at measured positions in counts, e.g. read from the real rig.
+
+        A measurement already contains the servo's own dynamics, so the model is bypassed: it is
+        reset to the reading and holds it until the next one. Keys may be ids or their strings.
+        """
+        for i, counts in positions.items():
+            i = int(i)
+            self.models[i].reset(self.clamp(i, counts))
 
     def positions(self):
         """Measured joint positions in counts (what PRESENT_POSITION would read); needs a running simulation.

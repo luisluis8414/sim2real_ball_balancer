@@ -65,8 +65,18 @@ ballbal jog
 ballbal balance
 ```
 
-Open `models/usd/scene.usda` in Isaac Sim and run
-`src/ballbal/simulation/isaac.py` in the Script Editor.
+The simulation needs Isaac Sim 6.0.0.1 in its own environment (see
+[simulation](docs/simulation.md)). Launch it with its Python Server, then drive
+it from the repository:
+
+```bash
+# terminal 1, Isaac Sim environment
+isaacsim isaacsim.exp.full --enable isaacsim.code_editor.python_server
+# terminal 2, repository environment
+python tools/simulation/sim.py start
+python tools/simulation/ball_sync.py
+```
+
 The simulation reads the same profile as real control.
 
 ## Repository map

@@ -21,13 +21,21 @@
             string boundCamera = "/World/view_camera"
         }
         dictionary omni_layer = {
+            string authoring_layer = "./scene.usda"
             dictionary locked = {
             }
             dictionary muteness = {
             }
         }
         dictionary renderSettings = {
+            double "rtx:directLighting:sampledLighting:maxRayUnexposedIntensity" = 6399.9990234375
             int "rtx:externalFrameCounter" = 44248
+            double "rtx:indirectDiffuse:maxRayUnexposedIntensity" = 6399.9990234375
+            double "rtx:pathtracing:fireflyFilter:maxPerEmissiveUnexposedIntensity" = 3199.99951171875
+            double "rtx:pathtracing:fireflyFilter:maxUnexposedIntensityPerSample" = 3199.99951171875
+            double "rtx:pathtracing:fireflyFilter:maxUnexposedIntensityPerSampleDiffuse" = 3199.99951171875
+            double "rtx:raytracing:inscattering:maxRTSampleUnexposedIntensity" = 204799.96875
+            double "rtx:translucency:maxRayUnexposedIntensity" = 19199.998046875
         }
     }
     defaultPrim = "World"
@@ -543,3 +551,4 @@ over "OmniverseKit_Top" (
     double3 xformOp:translate = (0, 0, 5)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
 }
+

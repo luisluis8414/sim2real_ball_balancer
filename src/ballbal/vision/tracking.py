@@ -1279,35 +1279,53 @@ def nudge_for(key: int) -> tuple[int, int]:
     return ARROW_KEYS.get(key, ARROW_KEYS.get(key & 0xFF, (0, 0)))
 
 
-def display_scale(
-    rect: tuple[int, int, int, int] | None, width: int, height: int
-) -> float:
-    """How much bigger the window is drawn than the frame.
+SETUP_HEIGHT = 1080
+"""Height in pixels the setup picture is drawn at, before the window scales it.
 
-    The smaller of the two ratios, so the enlarged frame fits inside the window
-    on both axes and keeps its shape -- a factor per axis would stretch the
-    picture, and a stretched picture puts the platform's edge somewhere it is
-    not. Never below 1: shrinking would cost detail for no gain, and the window
-    can letterbox instead.
-    """
-    if not rect or rect[2] <= 0 or rect[3] <= 0:
-        return 1.0
-    factor = min(rect[2] / width, rect[3] / height)
-    return factor if factor > 1.01 else 1.0
+Fixed, not taken from the window. Sizing it from `cv2.getWindowImageRect` fed
+back on itself: under Qt that reports the area the previous picture occupied,
+so a canvas built to fit it shrank frame by frame -- 630 px tall in a 1048 px
+window, measured. A canvas of constant shape that the window scales keeps the
+picture as tall as the window, and clicks still arrive in canvas pixels.
+"""
+PANEL_FONT = 0.7
+PANEL_LINE = 30
+PANEL_MARGIN = 18
 
 
-def _banner(frame: np.ndarray, lines: list[str]) -> None:
-    """Instructions, on their own ground so they stay readable over the bench."""
-    height = 10 + 16 * len(lines)
-    strip = frame[0:height, :].copy()
-    frame[0:height, :] = cv2.addWeighted(
-        strip, 0.2, np.zeros_like(strip), 0.8, 0
+def panel_width(lines: list[str]) -> int:
+    """Width in canvas pixels of a side panel that fits the longest line."""
+    widest = max(
+        (cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, PANEL_FONT, 1)[0][0]
+         for line in lines),
+        default=0,
     )
+    return widest + 2 * PANEL_MARGIN
+
+
+def beside_panel(
+    view: np.ndarray, lines: list[str], panel: int,
+) -> tuple[np.ndarray, tuple[int, int]]:
+    """The picture with the instructions in a panel to its left, never over it.
+
+    Written over the picture, nine lines of help hid the top of the plate --
+    exactly where the rim is clicked. The window is wider than the square
+    picture anyway, so the text goes beside it. Returns the canvas and where
+    the picture's top-left corner sits in it, which is what clicks are
+    converted back through.
+    """
+    height, width = view.shape[:2]
+    text_height = 2 * PANEL_MARGIN + PANEL_LINE * len(lines)
+    canvas_h = max(height, text_height)
+    canvas = np.full((canvas_h, panel + width, 3), 24, np.uint8)
+    origin = (panel, (canvas_h - height) // 2)
+    canvas[origin[1]:origin[1] + height, panel:panel + width] = view
     for index, line in enumerate(lines):
         cv2.putText(
-            frame, line, (8, 18 + 16 * index), cv2.FONT_HERSHEY_SIMPLEX,
-            0.42, (255, 255, 255), 1, cv2.LINE_AA,
+            canvas, line, (PANEL_MARGIN, PANEL_MARGIN + 20 + PANEL_LINE * index),
+            cv2.FONT_HERSHEY_SIMPLEX, PANEL_FONT, (235, 235, 235), 1, cv2.LINE_AA,
         )
+    return canvas, origin
 
 
 def guided_camera_setup(
@@ -1344,21 +1362,27 @@ def guided_camera_setup(
     capture = open_camera(device, size, square=square, offset=offset, side=side)
     window = "ballbal -- camera setup"
 
-    # "scale" is how much bigger the window is drawn than the frame. Clicks
-    # arrive in window pixels, and every one of them sets a calibration value,
-    # so they have to be divided back into frame pixels -- otherwise enlarging
-    # the window quietly moves the platform edge and the ball.
-    state: dict = {"click": None, "scale": 1.0}
+    # "scale" is how much bigger the picture is drawn than the frame, "origin"
+    # where it sits beside the help panel. Clicks arrive in window pixels, and
+    # every one of them sets a calibration value, so they have to be converted
+    # back into frame pixels -- otherwise enlarging the window quietly moves
+    # the platform edge and the ball. Clicks on the panel are ignored.
+    state: dict = {"click": None, "scale": 1.0, "origin": (0, 0), "size": (0, 0)}
 
     def on_mouse(event, x, y, flags, _param):  # noqa: ANN001, ANN202
         if event == cv2.EVENT_LBUTTONDOWN:
             factor = state["scale"] or 1.0
-            state["click"] = (int(round(x / factor)), int(round(y / factor)))
+            fx = (x - state["origin"][0]) / factor
+            fy = (y - state["origin"][1]) / factor
+            if 0 <= fx < state["size"][0] and 0 <= fy < state["size"][1]:
+                state["click"] = (int(round(fx)), int(round(fy)))
 
     cv2.namedWindow(window, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.resizeWindow(window, 1280, 720)
     cv2.setMouseCallback(window, on_mouse)
 
+    # One width for both steps, so the picture keeps its size when they change.
+    panel = panel_width([line for help_lines in _HELP.values() for line in help_lines])
     step = "platform"
     centre: tuple[int, int] | None = None
     radius: int = 0
@@ -1472,23 +1496,19 @@ def guided_camera_setup(
                 else:
                     lines.append("    nothing round matches -- try [w]ider, or click again")
 
-            # Draw at frame size, then enlarge to whatever the window is now.
-            # Doing it this way round keeps one scale factor for the whole
-            # frame, which is what makes the click conversion exact.
-            factor = display_scale(cv2.getWindowImageRect(window), width, height)
-            state["scale"] = factor
+            # Draw at frame size, then enlarge to the fixed setup height. Doing
+            # it this way round keeps one scale factor for the whole frame,
+            # which is what makes the click conversion exact.
+            factor = max(1.0, SETUP_HEIGHT / height)
             if factor > 1.0:
                 view = cv2.resize(
                     view,
-                    (int(width * factor), int(height * factor)),
+                    (round(width * factor), round(height * factor)),
                     interpolation=cv2.INTER_LINEAR,
                 )
-            # The banner is drawn after the enlargement, at a fixed size in
-            # window pixels. Drawn before it, it scales with the picture and
-            # keeps the same share of it -- nine lines of help swallowed 43% of
-            # the frame whatever the window was resized to.
-            _banner(view, lines)
-            cv2.imshow(window, view)
+            canvas, origin = beside_panel(view, lines, panel)
+            state.update(scale=factor, origin=origin, size=(width, height))
+            cv2.imshow(window, canvas)
             # waitKeyEx, not waitKey: the arrow keys carry information above the
             # low byte on some backends, and masking it off first throws away
             # which arrow was pressed.
