@@ -132,6 +132,44 @@ def find_camera(preferred: str | None = None, *, use_stored: bool = True) -> str
     return selected
 
 
+def side_camera_file() -> Path:
+    """Machine-local file containing the selected side camera path."""
+    return runtime_dir("state", "side-camera")
+
+
+def set_side_camera(preferred: str) -> tuple[str, Path]:
+    """Resolve and persist the side camera; return its stable path and the state file."""
+    selected = find_camera(preferred, use_stored=False)
+    state = side_camera_file()
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(selected + "\n", encoding="utf-8")
+    return selected, state
+
+
+def find_side_camera(preferred: str | None, main: str) -> str | None:
+    """The camera shown beside the tracked one, or None.
+
+    ``preferred`` (ID or path; "none" turns it off), else the stored selection, else the one
+    attached camera that is not ``main``. More than one other camera and nothing selected
+    means no side view rather than a guess.
+    """
+    if preferred is not None:
+        if preferred.lower() in ("none", "off"):
+            return None
+        return find_camera(preferred, use_stored=False)
+    state = side_camera_file()
+    if state.is_file():
+        selected = state.read_text(encoding="utf-8").strip()
+        if selected and Path(selected).exists():
+            return selected
+        logger.warning("selected side camera %s is not attached", selected)
+    others = [
+        path for path in list_cameras()
+        if Path(path).resolve() != Path(main).resolve()
+    ]
+    return str(others[0]) if len(others) == 1 else None
+
+
 def _format_camera_choices(candidates: list[Path]) -> str:
     if not candidates:
         return "  none"

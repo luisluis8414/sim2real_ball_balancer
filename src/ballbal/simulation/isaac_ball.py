@@ -60,9 +60,26 @@ class BallMarker:
         e1 = points[leg] - centre
         e1 = Gf.Vec3d(e1[0], e1[1], 0.0).GetNormalized()
         self.e1, self.e2, self.normal = e1, Gf.Vec3d(-e1[1], e1[0], 0.0), Gf.Vec3d(0.0, 0.0, 1.0)
-        bounds = UsdGeom.BBoxCache(0, [UsdGeom.Tokens.default_, UsdGeom.Tokens.render])
-        top = bounds.ComputeRelativeBound(link, link).ComputeAlignedRange().GetMax()[2]
-        self.centre = Gf.Vec3d(centre[0], centre[1], top)
+        self.centre = Gf.Vec3d(centre[0], centre[1], self._top(link))
+
+    def _top(self, link):
+        """Highest point of the platform's meshes in the link frame: the plate's top face.
+
+        From the points themselves, not a bounding box: with the timeline playing, BBoxCache
+        put the top 5.5 mm above the real face (15.7 against 10.3 mm), and the ball floated.
+        """
+        cache = UsdGeom.XformCache(0)
+        top = None
+        for prim in Usd.PrimRange(link, Usd.TraverseInstanceProxies()):
+            if not prim.IsA(UsdGeom.Mesh) or prim.GetPath().HasPrefix(MARKER):
+                continue
+            to_link, _ = cache.ComputeRelativeTransform(prim, link)
+            for point in UsdGeom.Mesh(prim).GetPointsAttr().Get() or []:
+                z = to_link.Transform(Gf.Vec3d(point))[2]
+                top = z if top is None or z > top else top
+        if top is None:
+            raise RuntimeError(f"no mesh under {PLATFORM} to find the plate's top face")
+        return top
 
     def _point(self, x_mm, y_mm):
         return self.centre + self.e1 * (x_mm / 1000.0) + self.e2 * (y_mm / 1000.0) + self.normal * self.radius

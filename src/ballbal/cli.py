@@ -89,6 +89,22 @@ def _add_balance_tuning(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _live_view(args: argparse.Namespace, calibration, servos):  # noqa: ANN001, ANN202
+    """The Lichtblick server when --ui was given, else a context that yields None."""
+    if not getattr(args, "ui", False):
+        return contextlib.nullcontext()
+    try:
+        from .ui import LiveView
+    except ImportError as exc:
+        raise RuntimeError(
+            f"--ui needs the ui extra ({exc.name} is missing): pip install -e \".[ui]\""
+        ) from exc
+    from .vision import find_camera, find_side_camera
+
+    side = find_side_camera(args.side_camera, find_camera(args.device))
+    return LiveView(calibration, servos, side_camera=side)
+
+
 def _balance_settings(args: argparse.Namespace, config: RigConfig) -> dict:
     """Flag, else the profile's [balance], else the built-in default."""
     from .control.balance import DEFAULT_GAINS, DEFAULT_MAX_TILT_PCT, QUIET_COUNTS
@@ -156,6 +172,10 @@ def build_parser() -> argparse.ArgumentParser:
         "camera_id",
         nargs="?",
         help="one-based camera ID; omit with set for interactive selection",
+    )
+    camera_parser.add_argument(
+        "--side", action="store_true",
+        help="with set: choose the side view camera for --ui instead of the tracked one",
     )
     camera_parser.add_argument("-v", "--verbose", action="store_true")
 
@@ -528,6 +548,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_balance_tuning(bal)
     bal.add_argument(
+        "--ui", action="store_true",
+        help="stream cameras, tracking and servos to Lichtblick and take targets "
+        "clicked there; balancing waits for Start in Lichtblick (docs/lichtblick.md)",
+    )
+    bal.add_argument(
+        "--side-camera", default=None,
+        help="with --ui: camera ID or path shown as the side view, 'none' for no side "
+        "view (default: `ballbal camera set --side`, else the other attached camera)",
+    )
+    bal.add_argument(
         "--mirror", action="store_true",
         help="mirror ball and platform into the running Isaac Sim "
         "(its Python Server must be up, see docs/simulation.md)",
@@ -610,6 +640,11 @@ def build_parser() -> argparse.ArgumentParser:
         path_parser.add_argument("--bearing", type=float, default=None)
         path_parser.add_argument("--aggression", type=float, default=None)
         path_parser.add_argument("--shape", type=float, default=None)
+        path_parser.add_argument("--ui", action="store_true", help="live view in Lichtblick")
+        path_parser.add_argument(
+            "--side-camera", default=None,
+            help="with --ui: side view camera ID or path, 'none' for no side view",
+        )
         _add_balance_tuning(path_parser)
         path_parser.add_argument("--quiet", type=int, default=None)
         path_parser.add_argument("--accel", type=int, default=None)
@@ -975,22 +1010,25 @@ def _dispatch(args: argparse.Namespace) -> int:
             if args.live:
                 rig.preflight(servos)
             width, height = cal.capture_size
-            return balance(
-                rig, servos,
-                calibration=cal,
-                device=find_camera(args.device),
-                size=(width, height),
-                bearing_deg=heading,
-                path=route,
-                square=not args.no_square,
-                offset=tuple(cal.crop_offset or (0, 0)),
-                side=cal.crop_side,
-                seconds=args.seconds,
-                dry_run=not args.live,
-                show=not args.no_window,
-                log_path=args.log,
-                **_balance_settings(args, config),
-            )
+            with _live_view(args, cal, servos) as view:
+                return balance(
+                    rig, servos,
+                    view=view,
+                    wait_for_start=view is not None,
+                    calibration=cal,
+                    device=find_camera(args.device),
+                    size=(width, height),
+                    bearing_deg=heading,
+                    path=route,
+                    square=not args.no_square,
+                    offset=tuple(cal.crop_offset or (0, 0)),
+                    side=cal.crop_side,
+                    seconds=args.seconds,
+                    dry_run=not args.live,
+                    show=not args.no_window,
+                    log_path=args.log,
+                    **_balance_settings(args, config),
+                )
 
         if args.command == "balance":
             from .control.balance import balance
@@ -1024,7 +1062,7 @@ def _dispatch(args: argparse.Namespace) -> int:
                 from .simulation.mirror import Mirror
 
                 mirror = Mirror(bearing_deg=bearing, ball_mm=calibration.ball_mm)
-            with mirror as mirroring:
+            with mirror as mirroring, _live_view(args, calibration, servos) as view:
                 return balance(
                     rig, servos,
                     calibration=calibration,
@@ -1040,6 +1078,8 @@ def _dispatch(args: argparse.Namespace) -> int:
                     show=not args.no_window,
                     log_path=args.log,
                     mirror=mirroring,
+                    view=view,
+                    wait_for_start=view is not None,
                 )
 
         if args.command == "neutral":
@@ -1184,11 +1224,16 @@ def _select_profile_interactively() -> str:
 
 
 def _cmd_camera(args: argparse.Namespace) -> int:
-    from .vision import active_camera_file, list_cameras, set_active_camera
+    from .vision import (
+        active_camera_file, list_cameras, set_active_camera, set_side_camera,
+        side_camera_file,
+    )
 
     cameras = list_cameras()
     state = active_camera_file()
     active = state.read_text(encoding="utf-8").strip() if state.is_file() else None
+    side_state = side_camera_file()
+    side = side_state.read_text(encoding="utf-8").strip() if side_state.is_file() else None
 
     if args.action == "show":
         if args.camera_id is not None:
@@ -1198,6 +1243,7 @@ def _cmd_camera(args: argparse.Namespace) -> int:
         print("Available cameras:")
         for index, path in enumerate(cameras, start=1):
             marker = " (active)" if str(path) == active else ""
+            marker += " (side view)" if str(path) == side else ""
             print(f"  {index}. {path}{marker}")
         if active and not Path(active).exists():
             print(f"Selected but not attached: {active}")
@@ -1205,10 +1251,16 @@ def _cmd_camera(args: argparse.Namespace) -> int:
             print("No camera selected. Run `ballbal camera set`.")
         return 0
 
-    selector = args.camera_id or _select_camera_interactively(cameras, active)
-    selected, saved_at = set_active_camera(selector)
-    logger.info("active camera: %s", selected)
-    print(f"Default camera set to {selected}.")
+    selector = args.camera_id or _select_camera_interactively(
+        cameras, side if args.side else active
+    )
+    if args.side:
+        selected, saved_at = set_side_camera(selector)
+        print(f"Side view camera set to {selected}.")
+    else:
+        selected, saved_at = set_active_camera(selector)
+        logger.info("active camera: %s", selected)
+        print(f"Default camera set to {selected}.")
     print(f"Stored in {saved_at}.")
     return 0
 

@@ -13,6 +13,7 @@ dependencies = ["pyserial>=3.5", "tomlkit>=0.13"]
 dev = ["pytest>=8.0"]
 vision = ["opencv-python>=4.9", "numpy>=1.26"]
 analysis = ["numpy>=1.26", "scipy>=1.13"]
+ui = ["foxglove-sdk>=0.27", "foxglove-websocket>=0.1.4", "opencv-python>=4.9", "numpy>=1.26"]
 
 [project.scripts]
 ballbal = "ballbal.cli:main"

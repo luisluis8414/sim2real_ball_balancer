@@ -1,0 +1,728 @@
+{
+ "configById": {
+  "Image!live_top": {
+   "foxglovePanelTitle": "Top camera + tracking",
+   "imageMode": {
+    "imageTopic": "/camera/real",
+    "annotations": {
+     "/camera/real/tracking": {
+      "visible": true
+     }
+    }
+   }
+  },
+  "Image!live_side": {
+   "foxglovePanelTitle": "Side camera",
+   "imageMode": {
+    "imageTopic": "/camera/side"
+   }
+  },
+  "3D!live_plate": {
+   "foxglovePanelTitle": "Click target (Publish point)",
+   "followTf": "plate",
+   "followMode": "follow-pose",
+   "cameraState": {
+    "distance": 40,
+    "perspective": false,
+    "phi": 0,
+    "target": [
+     0,
+     0,
+     0
+    ],
+    "targetOffset": [
+     0,
+     0,
+     0
+    ],
+    "targetOrientation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "thetaOffset": 0,
+    "fovy": 45,
+    "near": 0.1,
+    "far": 500
+   },
+   "scene": {
+    "backgroundColor": "#18181b",
+    "transforms": {
+     "showLabel": false
+    }
+   },
+   "transforms": {
+    "frame:plate": {
+     "visible": false
+    }
+   },
+   "topics": {
+    "/plate": {
+     "visible": true
+    }
+   },
+   "layers": {},
+   "publish": {
+    "type": "point",
+    "pointTopic": "/clicked_point",
+    "poseTopic": "/move_base_simple/goal",
+    "poseEstimateTopic": "/initialpose",
+    "poseEstimateXDeviation": 0.5,
+    "poseEstimateYDeviation": 0.5,
+    "poseEstimateThetaDeviation": 0.26179939
+   },
+   "imageMode": {}
+  },
+  "Plot!live_error": {
+   "foxglovePanelTitle": "Distance to target [mm]",
+   "paths": [
+    {
+     "value": "/ball.error",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "error",
+     "color": "#2a78d6",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 20,
+   "sidebarDimension": 240
+  },
+  "Plot!pid_x": {
+   "foxglovePanelTitle": "x: setpoint and ball [mm]",
+   "paths": [
+    {
+     "value": "/ball.target_x",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "setpoint",
+     "color": "#1f1f1d",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/ball.x",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "ball",
+     "color": "#2a78d6",
+     "lineSize": 2
+    },
+    {
+     "value": "/ball.predicted_x",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "predicted",
+     "color": "#eb6834",
+     "lineSize": 1
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!pid_y": {
+   "foxglovePanelTitle": "y: setpoint and ball [mm]",
+   "paths": [
+    {
+     "value": "/ball.target_y",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "setpoint",
+     "color": "#1f1f1d",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/ball.y",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "ball",
+     "color": "#2a78d6",
+     "lineSize": 2
+    },
+    {
+     "value": "/ball.predicted_y",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "predicted",
+     "color": "#eb6834",
+     "lineSize": 1
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!pid_terms_x": {
+   "foxglovePanelTitle": "x: P, I, D [leg counts]",
+   "paths": [
+    {
+     "value": "/pid.x.p",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "P",
+     "color": "#2a78d6",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/pid.x.i",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "I",
+     "color": "#eb6834",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/pid.x.d",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "D",
+     "color": "#1baf7a",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/pid.x.sum",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "sum",
+     "color": "#1f1f1d",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!pid_terms_y": {
+   "foxglovePanelTitle": "y: P, I, D [leg counts]",
+   "paths": [
+    {
+     "value": "/pid.y.p",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "P",
+     "color": "#2a78d6",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/pid.y.i",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "I",
+     "color": "#eb6834",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/pid.y.d",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "D",
+     "color": "#1baf7a",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/pid.y.sum",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "sum",
+     "color": "#1f1f1d",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Image!pid_top": {
+   "foxglovePanelTitle": "Top camera + tracking",
+   "imageMode": {
+    "imageTopic": "/camera/real",
+    "annotations": {
+     "/camera/real/tracking": {
+      "visible": true
+     }
+    }
+   }
+  },
+  "Plot!pid_error": {
+   "foxglovePanelTitle": "Distance to target [mm]",
+   "paths": [
+    {
+     "value": "/ball.error",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "error",
+     "color": "#2a78d6",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!servo_1": {
+   "foxglovePanelTitle": "axis_1 [counts]",
+   "paths": [
+    {
+     "value": "/servos.goal.axis_1",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "goal",
+     "color": "#1f1f1d",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/servos.measured.axis_1",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "measured",
+     "color": "#2a78d6",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!servo_2": {
+   "foxglovePanelTitle": "axis_2 [counts]",
+   "paths": [
+    {
+     "value": "/servos.goal.axis_2",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "goal",
+     "color": "#1f1f1d",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/servos.measured.axis_2",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "measured",
+     "color": "#eb6834",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!servo_3": {
+   "foxglovePanelTitle": "axis_3 [counts]",
+   "paths": [
+    {
+     "value": "/servos.goal.axis_3",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "goal",
+     "color": "#1f1f1d",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/servos.measured.axis_3",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "measured",
+     "color": "#1baf7a",
+     "lineSize": 2
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Plot!servo_lag": {
+   "foxglovePanelTitle": "goal − measured [counts]",
+   "paths": [
+    {
+     "value": "/servos.lag.axis_1",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "axis_1",
+     "color": "#2a78d6",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/servos.lag.axis_2",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "axis_2",
+     "color": "#eb6834",
+     "lineSize": 1.5
+    },
+    {
+     "value": "/servos.lag.axis_3",
+     "enabled": true,
+     "timestampMethod": "receiveTime",
+     "label": "axis_3",
+     "color": "#1baf7a",
+     "lineSize": 1.5
+    }
+   ],
+   "showLegend": true,
+   "legendDisplay": "floating",
+   "showPlotValuesInLegend": true,
+   "showXAxisLabels": true,
+   "showYAxisLabels": true,
+   "isSynced": true,
+   "xAxisVal": "timestamp",
+   "followingViewWidth": 10,
+   "sidebarDimension": 240
+  },
+  "Image!servo_side": {
+   "foxglovePanelTitle": "Side camera",
+   "imageMode": {
+    "imageTopic": "/camera/side"
+   }
+  },
+  "Image!sim_real": {
+   "foxglovePanelTitle": "Top camera",
+   "imageMode": {
+    "imageTopic": "/camera/real",
+    "annotations": {
+     "/camera/real/tracking": {
+      "visible": false
+     }
+    }
+   }
+  },
+  "Image!sim_overhead": {
+   "foxglovePanelTitle": "Isaac Sim: overhead camera",
+   "imageMode": {
+    "imageTopic": "/camera/sim/overhead"
+   }
+  },
+  "Image!sim_view": {
+   "foxglovePanelTitle": "Isaac Sim: view camera",
+   "imageMode": {
+    "imageTopic": "/camera/sim/view"
+   }
+  },
+  "Tab!main": {
+   "activeTabIdx": 0,
+   "tabs": [
+    {
+     "title": "Live",
+     "layout": {
+      "direction": "row",
+      "first": "Image!live_top",
+      "second": {
+       "direction": "row",
+       "first": {
+        "direction": "column",
+        "first": "Image!live_side",
+        "second": "Image!live_simview",
+        "splitPercentage": 55
+       },
+       "second": {
+        "direction": "column",
+        "first": {
+         "direction": "row",
+         "first": "Indicator!state_live",
+         "second": {
+          "direction": "row",
+          "first": "Publish!start_live",
+          "second": "Publish!stop_live",
+          "splitPercentage": 50
+         },
+         "splitPercentage": 34
+        },
+        "second": {
+         "direction": "column",
+         "first": "3D!live_plate",
+         "second": "Plot!live_error",
+         "splitPercentage": 40
+        },
+        "splitPercentage": 16
+       },
+       "splitPercentage": 62
+      },
+      "splitPercentage": 33
+     }
+    },
+    {
+     "title": "PID",
+     "layout": {
+      "direction": "row",
+      "first": {
+       "direction": "column",
+       "first": {
+        "direction": "row",
+        "first": "Plot!pid_x",
+        "second": "Plot!pid_y",
+        "splitPercentage": 50
+       },
+       "second": {
+        "direction": "row",
+        "first": "Plot!pid_terms_x",
+        "second": "Plot!pid_terms_y",
+        "splitPercentage": 50
+       },
+       "splitPercentage": 50
+      },
+      "second": {
+       "direction": "column",
+       "first": {
+        "direction": "row",
+        "first": "Indicator!state_pid",
+        "second": {
+         "direction": "row",
+         "first": "Publish!start_pid",
+         "second": "Publish!stop_pid",
+         "splitPercentage": 50
+        },
+        "splitPercentage": 34
+       },
+       "second": {
+        "direction": "column",
+        "first": "Image!pid_top",
+        "second": "Plot!pid_error",
+        "splitPercentage": 62
+       },
+       "splitPercentage": 14
+      },
+      "splitPercentage": 72
+     }
+    },
+    {
+     "title": "Servos",
+     "layout": {
+      "direction": "row",
+      "first": {
+       "direction": "column",
+       "first": {
+        "direction": "column",
+        "first": "Plot!servo_1",
+        "second": "Plot!servo_2",
+        "splitPercentage": 50
+       },
+       "second": {
+        "direction": "column",
+        "first": "Plot!servo_3",
+        "second": "Plot!servo_lag",
+        "splitPercentage": 50
+       },
+       "splitPercentage": 50
+      },
+      "second": {
+       "direction": "column",
+       "first": {
+        "direction": "row",
+        "first": "Indicator!state_servos",
+        "second": {
+         "direction": "row",
+         "first": "Publish!start_servos",
+         "second": "Publish!stop_servos",
+         "splitPercentage": 50
+        },
+        "splitPercentage": 34
+       },
+       "second": "Image!servo_side",
+       "splitPercentage": 14
+      },
+      "splitPercentage": 65
+     }
+    },
+    {
+     "title": "Sim",
+     "layout": {
+      "direction": "row",
+      "first": "Image!sim_real",
+      "second": {
+       "direction": "row",
+       "first": "Image!sim_overhead",
+       "second": "Image!sim_view",
+       "splitPercentage": 50
+      },
+      "splitPercentage": 33
+     }
+    }
+   ]
+  },
+  "Indicator!state_live": {
+   "foxglovePanelTitle": "State",
+   "path": "/balance/state.state",
+   "style": "background",
+   "fallbackColor": "#6b6b66",
+   "fallbackLabel": "NOT CONNECTED",
+   "rules": [
+    {
+     "operator": "=",
+     "rawValue": "balancing",
+     "color": "#1baf7a",
+     "label": "BALANCING"
+    },
+    {
+     "operator": "=",
+     "rawValue": "ready",
+     "color": "#eda100",
+     "label": "READY"
+    }
+   ]
+  },
+  "Publish!start_live": {
+   "foxglovePanelTitle": "Start balancing",
+   "topicName": "/balance/command",
+   "datatype": "balance_control",
+   "buttonText": "Start balancing",
+   "buttonTooltip": "servos on, plate level, then balance",
+   "advancedView": false,
+   "value": "{\"command\": \"start\"}"
+  },
+  "Publish!stop_live": {
+   "foxglovePanelTitle": "Stop",
+   "topicName": "/balance/command",
+   "datatype": "balance_control",
+   "buttonText": "Stop",
+   "buttonTooltip": "plate level, then servos off",
+   "advancedView": false,
+   "value": "{\"command\": \"stop\"}"
+  },
+  "Indicator!state_pid": {
+   "foxglovePanelTitle": "State",
+   "path": "/balance/state.state",
+   "style": "background",
+   "fallbackColor": "#6b6b66",
+   "fallbackLabel": "NOT CONNECTED",
+   "rules": [
+    {
+     "operator": "=",
+     "rawValue": "balancing",
+     "color": "#1baf7a",
+     "label": "BALANCING"
+    },
+    {
+     "operator": "=",
+     "rawValue": "ready",
+     "color": "#eda100",
+     "label": "READY"
+    }
+   ]
+  },
+  "Publish!start_pid": {
+   "foxglovePanelTitle": "Start balancing",
+   "topicName": "/balance/command",
+   "datatype": "balance_control",
+   "buttonText": "Start balancing",
+   "buttonTooltip": "servos on, plate level, then balance",
+   "advancedView": false,
+   "value": "{\"command\": \"start\"}"
+  },
+  "Publish!stop_pid": {
+   "foxglovePanelTitle": "Stop",
+   "topicName": "/balance/command",
+   "datatype": "balance_control",
+   "buttonText": "Stop",
+   "buttonTooltip": "plate level, then servos off",
+   "advancedView": false,
+   "value": "{\"command\": \"stop\"}"
+  },
+  "Indicator!state_servos": {
+   "foxglovePanelTitle": "State",
+   "path": "/balance/state.state",
+   "style": "background",
+   "fallbackColor": "#6b6b66",
+   "fallbackLabel": "NOT CONNECTED",
+   "rules": [
+    {
+     "operator": "=",
+     "rawValue": "balancing",
+     "color": "#1baf7a",
+     "label": "BALANCING"
+    },
+    {
+     "operator": "=",
+     "rawValue": "ready",
+     "color": "#eda100",
+     "label": "READY"
+    }
+   ]
+  },
+  "Publish!start_servos": {
+   "foxglovePanelTitle": "Start balancing",
+   "topicName": "/balance/command",
+   "datatype": "balance_control",
+   "buttonText": "Start balancing",
+   "buttonTooltip": "servos on, plate level, then balance",
+   "advancedView": false,
+   "value": "{\"command\": \"start\"}"
+  },
+  "Publish!stop_servos": {
+   "foxglovePanelTitle": "Stop",
+   "topicName": "/balance/command",
+   "datatype": "balance_control",
+   "buttonText": "Stop",
+   "buttonTooltip": "plate level, then servos off",
+   "advancedView": false,
+   "value": "{\"command\": \"stop\"}"
+  },
+  "Image!live_simview": {
+   "foxglovePanelTitle": "Isaac Sim: view camera",
+   "imageMode": {
+    "imageTopic": "/camera/sim/view"
+   }
+  }
+ },
+ "globalVariables": {},
+ "userNodes": {},
+ "playbackConfig": {
+  "speed": 1
+ },
+ "layout": "Tab!main"
+}

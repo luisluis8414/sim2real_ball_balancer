@@ -105,5 +105,5 @@ control and simulation derive identical effective positions from its measured
 minimum. Raw logs never become configuration; they go to `runtime/`.
 
 See [setup](docs/setup.md), [control](docs/control.md),
-[balancing](docs/balance.md), [simulation](docs/simulation.md), and
-[architecture](docs/architecture.md).
+[balancing](docs/balance.md), [live view in Lichtblick](docs/lichtblick.md),
+[simulation](docs/simulation.md), and [architecture](docs/architecture.md).

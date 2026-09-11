@@ -26,13 +26,14 @@ id = 3
 # Optional: tuned balancing settings for this platform (docs/balance.md).
 # Measure your own; every key may be left out and falls back to the defaults.
 # [balance]
-# kp = 0.0156
+# kp = 0.01639
 # ki = 0.008
-# kd = 0.0056
+# kd = 0.00401
 # max_tilt = 62.5
 # acceleration = 254
 # speed = 3400
-# derivative_smoothing = 0.6
+# derivative_smoothing = 0.2885
 # integral_zone = 12.0
-# predict_ms = 85.0
-# plant_gain = 4.1
+# predict_ms = 173.0
+# plant_gain = 5.94
+# quiet = 4

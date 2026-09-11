@@ -25,6 +25,7 @@ towards a pose where the linkage locks.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 from dataclasses import dataclass, field
@@ -226,6 +227,8 @@ class PID:
     pixel noise.
     """
     integral: float = field(default=0.0, init=False)
+    terms: tuple[float, float, float] = field(default=(0.0, 0.0, 0.0), init=False)
+    """P, I and D of the last update, in tilt fraction, before the output limit."""
     _last_measurement: float | None = field(default=None, init=False)
     _derivative: float = field(default=0.0, init=False)
 
@@ -236,9 +239,12 @@ class PID:
 
     def update(
         self, setpoint: float, measurement: float, dt: float, *,
-        scale: float = 1.0,
+        scale: float = 1.0, velocity: float | None = None,
     ) -> float:
-        """``scale`` raises the loop's speed without changing its damping.
+        """``velocity``, when given, is used for the derivative instead of
+        differencing the measurement -- see `Predictor.velocity`.
+
+        ``scale`` raises the loop's speed without changing its damping.
 
         Bandwidth goes as ``sqrt(G*kp)`` and damping as ``kd*sqrt(G/kp)``, so
         scaling kp by the square and kd by the first power moves the former and
@@ -256,7 +262,9 @@ class PID:
             bound = self.integral_limit / self.ki
             self.integral = max(-bound, min(bound, self.integral))
 
-        if self._last_measurement is None:
+        if velocity is not None:
+            raw = -velocity
+        elif self._last_measurement is None:
             raw = 0.0
         else:
             # Negated because this is d(measurement)/dt standing in for
@@ -266,11 +274,12 @@ class PID:
         alpha = self.derivative_smoothing
         self._derivative = alpha * raw + (1.0 - alpha) * self._derivative
 
-        output = (
-            self.kp * scale * scale * error
-            + self.ki * self.integral
-            + self.kd * scale * self._derivative
+        self.terms = (
+            self.kp * scale * scale * error,
+            self.ki * self.integral,
+            self.kd * scale * self._derivative,
         )
+        output = sum(self.terms)
         return max(-self.output_limit, min(self.output_limit, output))
 
 
@@ -302,6 +311,17 @@ class Predictor:
     gain: float
     """Ball acceleration per unit of commanded tilt, mm/s^2."""
     velocity_smoothing: float = 0.5
+    velocity: tuple[float, float] = field(default=(0.0, 0.0), init=False)
+    """The ball's velocity at the end of the horizon, mm/s, from the last call.
+
+    This, not the difference of successive predictions, is what the derivative
+    has to act on. The predicted position contains the controller's own last
+    commands; differencing it frame by frame turned every change of command
+    into a jump of the derivative, which changed the command again. Measured
+    holding the ball in the middle, that loop moved the legs 18 counts from one
+    frame to the next -- a plate jittering hard around a ball that was, on
+    average, 1.2 mm from where it should be.
+    """
     _sent: list[tuple[float, tuple[float, float]]] = field(default_factory=list, init=False)
     _last: tuple[float, float, float] | None = field(default=None, init=False)
     _velocity: tuple[float, float] = field(default=(0.0, 0.0), init=False)
@@ -332,11 +352,14 @@ class Predictor:
             )
         self._last = (t, position[0], position[1])
         if self.horizon <= 0:
+            self.velocity = self._velocity
             return position
         end = t + self.horizon
         # Each lean acts from its send time plus the horizon until the next one
-        # does; integrate the acceleration they give twice over [t, end].
+        # does; integrate the acceleration they give once for the velocity and
+        # twice for the position over [t, end].
         extra = [0.0, 0.0]
+        gained = [0.0, 0.0]
         for index, (sent_at, tilt) in enumerate(self._sent):
             start = max(sent_at + self.horizon, t)
             stop = (
@@ -348,6 +371,9 @@ class Predictor:
             weight = ((end - start) ** 2 - (end - stop) ** 2) / 2.0
             extra[0] += self.gain * tilt[0] * weight
             extra[1] += self.gain * tilt[1] * weight
+            gained[0] += self.gain * tilt[0] * (stop - start)
+            gained[1] += self.gain * tilt[1] * (stop - start)
+        self.velocity = (self._velocity[0] + gained[0], self._velocity[1] + gained[1])
         return (
             position[0] + self._velocity[0] * self.horizon + extra[0],
             position[1] + self._velocity[1] * self.horizon + extra[1],
@@ -475,6 +501,7 @@ def _tilt_from_controllers(
     position: tuple[float, float],
     dt: float,
     scale: float = 1.0,
+    velocity: tuple[float, float] | None = None,
 ) -> tuple[float, float]:
     """Both axes, into a downhill tilt vector.
 
@@ -489,8 +516,9 @@ def _tilt_from_controllers(
     # its own error would make the correction point somewhere other than back
     # at the setpoint -- a ball out at 45 degrees would be pushed along an axis
     # rather than towards the middle.
-    out_x = controllers[0].update(target[0], position[0], dt, scale=scale)
-    out_y = controllers[1].update(target[1], position[1], dt, scale=scale)
+    vx, vy = velocity if velocity is not None else (None, None)
+    out_x = controllers[0].update(target[0], position[0], dt, scale=scale, velocity=vx)
+    out_y = controllers[1].update(target[1], position[1], dt, scale=scale, velocity=vy)
     return out_x, out_y
 
 
@@ -523,6 +551,8 @@ def balance(
     show: bool = True,
     log_path=None,  # noqa: ANN001 - Path
     mirror=None,  # noqa: ANN001 - simulation.mirror.Mirror
+    view=None,  # noqa: ANN001 - ui.LiveView
+    wait_for_start: bool = False,
 ) -> int:
     """Close the loop: see the ball, lean the plate, repeat.
 
@@ -534,6 +564,18 @@ def balance(
 
     ``predict`` is the look-ahead in seconds (see `Predictor`), with
     ``plant_gain`` the ball's acceleration per count of leg swing.
+
+    ``view`` streams every frame to Lichtblick and hands back targets clicked
+    there; a click replaces the path, if one was running.
+
+    When the local preview is visible, clicking inside the platform sets the
+    same target directly in the camera image. This also replaces a running
+    path.
+
+    ``wait_for_start`` starts with the servos off and the controller idle while camera,
+    tracking and view run; "start" from the view (or ``s`` in the preview) energises the
+    servos, levels the plate and begins balancing, "stop" levels it and releases them again.
+    ``seconds`` and a path's clock count from the start.
 
     ``mirror`` copies every frame's ball and the platform's measured pose into
     Isaac Sim. It costs the loop one sync read of the positions, about a
@@ -636,6 +678,8 @@ def balance(
         print("  DRY RUN -- torque stays off, nothing moves")
     if mirror is not None:
         print("  mirroring ball and platform into Isaac Sim")
+    if view is not None:
+        from ..ui import Frame
 
     lock_camera(device)
     capture = open_camera(device, size, square=square, offset=offset, side=side)
@@ -648,6 +692,8 @@ def balance(
     lost = 0
     last_goals: dict[int, int] = {}
     applied_tilt = (0.0, 0.0)
+    window = "ballbal -- balance"
+    preview = {"target": None, "command": None}
 
     try:
         ok, frame = capture.read()
@@ -664,6 +710,20 @@ def balance(
         cv2.circle(mask, centre, roi_radius, 255, -1)
         platform_mm = calibration.platform_radius_px * calibration.mm_per_px
 
+        if show:
+            # WINDOW_AUTOSIZE keeps callback coordinates in the camera frame's
+            # pixel system. A rescaled window would need the same conversion as
+            # the guided camera-setup canvas.
+            cv2.namedWindow(window, cv2.WINDOW_AUTOSIZE)
+
+            def on_mouse(event, x, y, _flags, _param):  # noqa: ANN001, ANN202
+                if event != cv2.EVENT_LBUTTONDOWN:
+                    return
+                if math.hypot(x - centre[0], y - centre[1]) <= roi_radius:
+                    preview["target"] = (x, y)
+
+            cv2.setMouseCallback(window, on_mouse)
+
         if log_path is not None:
             log_file = open(log_path, "w", newline="")
             writer = csv.writer(log_file)
@@ -679,12 +739,34 @@ def balance(
         started = time.perf_counter()
         previous = started
         last_seen = started
+        loop_hz = 0.0
+        power = contextlib.ExitStack()
 
-        with rig.bus.torque([s.id for s in servos], hold=False) if not dry_run \
-                else _NullGuard():
+        def engage() -> None:
             if not dry_run:
+                power.enter_context(rig.bus.torque([s.id for s in servos], hold=False))
                 rig.goto(kinematics.level(), acceleration=acceleration,
                          speed=speed, settle=0.6)
+            for controller in controllers:
+                controller.reset()
+            predictor.reset()
+
+        def disengage() -> None:
+            if not dry_run:
+                try:
+                    rig.goto(kinematics.level(), acceleration=acceleration,
+                             speed=speed, settle=0.5)
+                finally:
+                    power.close()  # torque off
+
+        running = not wait_for_start
+        since = started
+        with power:
+            if running:
+                engage()
+            else:
+                print("  READY -- servos off; press Start in Lichtblick "
+                      "(or s in the preview) to balance")
             while True:
                 ok, frame = capture.read()
                 if not ok:
@@ -696,6 +778,46 @@ def balance(
                 elapsed = now - started
                 if dt <= 0:
                     continue
+                loop_hz = 0.9 * loop_hz + 0.1 / dt if loop_hz else 1.0 / dt
+                clicked_px = preview["target"]
+                preview["target"] = None
+                if clicked_px is not None:
+                    target_mm = (
+                        (clicked_px[0] - centre[0]) * calibration.mm_per_px,
+                        (clicked_px[1] - centre[1]) * calibration.mm_per_px,
+                    )
+                    path = None
+                    for controller in controllers:
+                        controller.reset()
+                    print(
+                        f"  target set by preview click: "
+                        f"x={target_mm[0]:+.1f} y={target_mm[1]:+.1f} mm"
+                    )
+                if view is not None:
+                    clicked = view.take_target()
+                    if clicked is not None:
+                        target_mm, path = clicked, None
+                        for controller in controllers:
+                            controller.reset()
+
+                command = preview["command"] or (
+                    view.take_command() if view is not None else None
+                )
+                preview["command"] = None
+                if command == "start" and not running:
+                    print("  START -- balancing" + (" (dry run)" if dry_run else ""))
+                    engage()
+                    running, since = True, time.perf_counter()
+                    last_goals, applied_tilt = {}, (0.0, 0.0)
+                    previous = time.perf_counter()
+                    continue
+                if command == "stop" and running:
+                    print("  STOP -- plate level, servos off")
+                    disengage()
+                    running = False
+                    last_goals, applied_tilt = {}, (0.0, 0.0)
+                    previous = time.perf_counter()
+                    continue
 
                 detection = find_ball_by_colour(
                     frame,
@@ -704,7 +826,12 @@ def balance(
                 )
                 if detection is None:
                     lost += 1
-                    if now - last_seen > LOST_BALL_GRACE:
+                    ahead = None
+                    if not running:
+                        goals = None
+                        tilt = (0.0, 0.0)
+                        x_mm = y_mm = float("nan")
+                    elif now - last_seen > LOST_BALL_GRACE:
                         goals = kinematics.level()
                         for controller in controllers:
                             controller.reset()
@@ -715,18 +842,27 @@ def balance(
                         goals = None
                         tilt = (0.0, 0.0)
                         x_mm = y_mm = float("nan")
+                elif not running:
+                    # Tracked and shown, not controlled: the plate is not the loop's yet.
+                    last_seen = now
+                    samples += 1
+                    x_mm = (detection.x - centre[0]) * calibration.mm_per_px
+                    y_mm = (detection.y - centre[1]) * calibration.mm_per_px
+                    ahead = (x_mm, y_mm)
+                    goals, tilt = None, (0.0, 0.0)
                 else:
                     last_seen = now
                     samples += 1
                     if path is not None:
-                        target_mm = path.at(elapsed)
+                        target_mm = path.at(now - since)
                     x_mm = (detection.x - centre[0]) * calibration.mm_per_px
                     y_mm = (detection.y - centre[1]) * calibration.mm_per_px
                     ahead = predictor(now, (x_mm, y_mm))
                     distance = math.hypot(ahead[0] - target_mm[0], ahead[1] - target_mm[1])
                     scale = gain_scale(distance, platform_mm, aggression, shape)
                     tilt = _tilt_from_controllers(
-                        controllers, target_mm, ahead, dt, scale
+                        controllers, target_mm, ahead, dt, scale,
+                        velocity=predictor.velocity if predict > 0 else None,
                     )
                     goals = kinematics.goals(*tilt)
 
@@ -744,7 +880,8 @@ def balance(
                     applied_tilt = tilt
                     predictor.sent(now, tilt)
 
-                if mirror is not None:
+                pose = None
+                if mirror is not None or view is not None:
                     # The measured pose, not the goal: what the plate really
                     # holds, servo lag and all, and in a dry run the plate that
                     # is not moving. A failed read skips one frame's pose
@@ -753,8 +890,28 @@ def balance(
                         pose = rig.positions(servos)
                     except (BusError, ServoError):
                         pose = None
-                    seen = detection is not None
+                seen = detection is not None
+                if mirror is not None:
                     mirror.send(x_mm if seen else None, y_mm if seen else None, pose)
+                if view is not None:
+                    view.publish(Frame(
+                        # The window below draws on the frame; the view gets it clean.
+                        image=frame.copy() if show else frame,
+                        ball=(x_mm, y_mm) if seen else None,
+                        ball_radius_px=detection.radius if seen else None,
+                        target=tuple(target_mm),
+                        predicted=ahead if seen and running else None,
+                        tilt=tuple(applied_tilt),
+                        goals=dict(last_goals) if last_goals else None,
+                        measured=pose,
+                        loop_hz=loop_hz,
+                        # In leg counts, which is what the gains are read in.
+                        pid={
+                            axis: tuple(term * kinematics.reach for term in c.terms)
+                            for axis, c in zip("xy", controllers)
+                        } if seen and running else None,
+                        state="balancing" if running else "ready",
+                    ))
 
                 # Every frame gets a row, whether or not a command went out, and
                 # the tilt recorded is the one the plate is actually holding.
@@ -780,7 +937,7 @@ def balance(
 
                 if show:
                     marker = None
-                    if path is not None and calibration.mm_per_px:
+                    if calibration.mm_per_px:
                         marker = (
                             int(centre[0] + target_mm[0] / calibration.mm_per_px),
                             int(centre[1] + target_mm[1] / calibration.mm_per_px),
@@ -788,12 +945,15 @@ def balance(
                     _draw_balance(
                         frame, detection, centre, roi_radius, tilt, goals,
                         x_mm, y_mm, calibration.mm_per_px, dry_run, marker,
+                        target_mm, ready=not running,
                     )
-                    cv2.imshow("ballbal -- balance", frame)
+                    cv2.imshow(window, frame)
                     key = cv2.waitKey(1) & 0xFF
                     if key in (ord("q"), 27):
                         break
-                if seconds is not None and elapsed >= seconds:
+                    if key == ord("s") and wait_for_start:
+                        preview["command"] = "stop" if running else "start"
+                if seconds is not None and running and now - since >= seconds:
                     break
     finally:
         capture.release()
@@ -814,19 +974,9 @@ def balance(
     return 0
 
 
-class _NullGuard:
-    """Stands in for the torque guard when nothing is allowed to move."""
-
-    def __enter__(self):  # noqa: ANN204
-        return self
-
-    def __exit__(self, *_exc) -> bool:  # noqa: ANN002
-        return False
-
-
 def _draw_balance(
     frame, detection, centre, roi_radius, tilt, goals, x_mm, y_mm,
-    mm_per_px, dry_run, target_px=None,
+    mm_per_px, dry_run, target_px=None, target_mm=(0.0, 0.0), ready=False,
 ) -> None:  # noqa: ANN001
     """Show the ball, the target, and which way the plate is being leaned."""
     import cv2
@@ -852,7 +1002,12 @@ def _draw_balance(
     )
     cv2.arrowedLine(frame, centre, tip, (255, 120, 0), 2, tipLength=0.2)
 
-    lines = ["DRY RUN -- nothing moves" if dry_run else "LIVE"]
+    lines = [
+        ("DRY RUN -- nothing moves" if dry_run else "LIVE")
+        + (" -- READY, press s to start" if ready else ""),
+        "click plate to set target",
+        f"target x{target_mm[0]:+7.1f}  y{target_mm[1]:+7.1f} mm",
+    ]
     if detection is not None:
         lines.append(f"ball  x{x_mm:+7.1f}  y{y_mm:+7.1f} mm")
     else:
@@ -862,8 +1017,13 @@ def _draw_balance(
         lines.append("goals " + " ".join(f"{v}" for v in goals.values()))
 
     height = 12 + 18 * len(lines)
-    strip = frame[0:height, 0 : 8 + 22 * 9].copy()
-    frame[0:height, 0 : 8 + 22 * 9] = cv2.addWeighted(
+    panel_width = min(
+        frame.shape[1],
+        12 + max(cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)[0][0]
+                 for line in lines),
+    )
+    strip = frame[0:height, 0:panel_width].copy()
+    frame[0:height, 0:panel_width] = cv2.addWeighted(
         strip, 0.25, strip * 0, 0.75, 0
     )
     for index, line in enumerate(lines):
