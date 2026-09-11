@@ -1,12 +1,7 @@
 # Sim-to-real ball balancer
 
 Tools to set up, calibrate, control and simulate the three-axis ball-balancer
-platform. The repository follows the operator workflow:
-
-```text
-setup + calibration  ->  real platform control  ->  simulation + comparison
-profiles/                 src/ballbal/               src/ballbal/simulation/
-```
+platform.
 
 ## Quick start
 
